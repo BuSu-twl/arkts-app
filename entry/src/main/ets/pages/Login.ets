@@ -163,6 +163,7 @@ struct LoginPage {
             return;
           }
           console.log("登录成功");
+          router.pushUrl({ url: 'pages/Index' });
         })
 
       Text('注册账号')

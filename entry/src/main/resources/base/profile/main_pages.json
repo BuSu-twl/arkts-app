@@ -3,6 +3,10 @@
     "pages/Login",
     "pages/SmsLogin",
     "pages/ForgetPwd",
-    "pages/Register"
+    "pages/Register",
+    "pages/Index",
+    "pages/ProductDetail",
+    "pages/FavoritePage",
+    "pages/CartPage"
   ]
 }

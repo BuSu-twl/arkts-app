@@ -1,0 +1,109 @@
+// path: entry/src/main/ets/pages/FavoritePage.ets
+import router from '@ohos.router';
+import { Product, GlobalStore, RouteParams } from '../model/Models';
+
+@Entry
+@Component
+struct FavoritePage {
+  @State favList: Product[] = [];
+  @State recommends: Product[] = [];
+
+  aboutToAppear() {
+    this.refresh();
+    this.recommends = GlobalStore.getRandomRecommend(6);
+  }
+
+  refresh() {
+    // 触发 UI 响应式刷新的标准动作
+    this.favList = [...GlobalStore.favoriteList];
+  }
+
+  build() {
+    Column() {
+      // 1. 顶部导航
+      Row() {
+        Text("首页").fontSize(16).fontColor('#E60012').fontWeight(FontWeight.Bold)
+          .onClick(() => router.replaceUrl({ url: 'pages/Index' }))
+        //Blank()
+        Text("我的收藏").fontSize(18).fontWeight(FontWeight.Bold).padding({left: 100})
+        Blank()
+      }.width('100%').padding(15).backgroundColor(Color.White)
+
+      // 2. 动态滚动区域
+      List({ space: 15 }) {
+        // A. 收藏列表
+        ListItem() {
+          if (this.favList.length === 0) {
+            Column() {
+              Text("收藏空空如也").fontColor('#999').margin({ top: 30 })
+              Button("去逛逛").backgroundColor('#E60012').margin(15)
+                .onClick(() => router.replaceUrl({ url: 'pages/Index' }))
+            }.width('100%')
+          } else {
+            Column() {
+              ForEach(this.favList, (item: Product, index: number) => {
+                Row() {
+                  Image($rawfile(item.images[0])).width(60).height(60).borderRadius(8)
+                  Text(item.name).layoutWeight(1).margin({ left: 10 }).maxLines(1).fontSize(14)
+                  Text("删除").fontColor('#999').fontSize(12).padding(10)
+                    .onClick((event) => {
+                      // 阻止冒泡，防止点击删除时也跳到详情页
+                      GlobalStore.favoriteList.splice(index, 1);
+                      this.refresh();
+                    })
+                }
+                .padding(12).backgroundColor(Color.White).borderRadius(12).margin({ bottom: 10 })
+                // 【核心修复】：为整行添加点击事件，跳转详情页
+                .onClick(() => {
+                  router.pushUrl({
+                    url: 'pages/ProductDetail',
+                    params: { product: item } as RouteParams
+                  })
+                })
+              })
+            }
+          }
+        }
+
+        // B. 猜你喜欢标题
+        ListItem() {
+          Text("—— 猜你喜欢 ——").width('100%').textAlign(TextAlign.Center).fontSize(12).fontColor('#999').margin({ top: 10 })
+        }
+
+        // C. 推荐网格流
+        ListItem() {
+          Grid() {
+            ForEach(this.recommends, (item: Product) => {
+              GridItem() {
+                Column() {
+                  Image($rawfile(item.images[0])).width('100%').height(110).objectFit(ImageFit.Cover)
+                  Text(item.name).fontSize(12).maxLines(1).margin(5)
+                  Button("收藏").fontSize(10).height(22).backgroundColor('#E60012')
+                    .onClick(() => {
+                      GlobalStore.addToFavorite(item);
+                      this.refresh();
+                    })
+                }
+                .backgroundColor(Color.White).borderRadius(8).padding(5)
+                // 推荐位的点击跳转
+                .onClick(() => {
+                  router.pushUrl({
+                    url: 'pages/ProductDetail',
+                    params: { product: item } as RouteParams
+                  })
+                })
+              }
+            })
+          }
+          .columnsTemplate('1fr 1fr')
+          .columnsGap(10)
+          .rowsGap(10)
+          .height(500)
+        }
+      }
+      .layoutWeight(1)
+      .width('94%')
+    }
+    .backgroundColor('#F5F5F5').height('100%')
+  }
+}
