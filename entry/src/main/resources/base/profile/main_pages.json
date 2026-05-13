@@ -1,0 +1,8 @@
+{
+  "src": [
+    "pages/Login",
+    "pages/SmsLogin",
+    "pages/ForgetPwd",
+    "pages/Register"
+  ]
+}
