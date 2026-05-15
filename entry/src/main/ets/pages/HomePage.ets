@@ -9,6 +9,8 @@ import { BottomNavBar } from '../components/BottomNavBar';
 struct HomePage {
   private products: Product[] = productData.data as Product[];
   @State hotCarousel: Product[] = [];
+  @State personalRecommends: Product[] = [];
+  @State personalHint: string = '';
   @State categoryRecommends: Product[] = [];
   @State coupons: Coupon[] = GlobalStore.COUPONS;
   @State claimedIds: string[] = [];
@@ -18,10 +20,17 @@ struct HomePage {
     this.hotCarousel = ProductUtils.getTopHotProducts(this.products, 5);
     this.categoryRecommends = ProductUtils.getCategoryTopProducts(this.products);
     this.refreshClaimed();
+    this.refreshPersonalRecommends();
   }
 
   onPageShow() {
     this.refreshClaimed();
+    this.refreshPersonalRecommends();
+  }
+
+  refreshPersonalRecommends() {
+    this.personalRecommends = GlobalStore.getPersonalizedRecommend(6);
+    this.personalHint = GlobalStore.getPersonalRecommendHint();
   }
 
   refreshClaimed() {
@@ -162,6 +171,78 @@ struct HomePage {
           .padding(14)
           .backgroundColor(Color.White)
           .borderRadius(12)
+
+          if (this.personalRecommends.length > 0) {
+            Column({ space: 10 }) {
+              Row() {
+                Text('为你推荐')
+                  .fontSize(16)
+                  .fontWeight(FontWeight.Bold)
+                Text(this.personalHint)
+                  .fontSize(11)
+                  .fontColor('#999999')
+                  .margin({ left: 8 })
+                  .maxLines(1)
+                  .textOverflow({ overflow: TextOverflow.Ellipsis })
+                  .layoutWeight(1)
+              }
+              .width('100%')
+
+              Grid() {
+                ForEach(this.personalRecommends, (item: Product) => {
+                  GridItem() {
+                    Column({ space: 6 }) {
+                      Image($rawfile(item.images[0]))
+                        .width('100%')
+                        .aspectRatio(1)
+                        .objectFit(ImageFit.Cover)
+                        .borderRadius(8)
+                        .backgroundColor('#EEEEEE')
+                        .onClick(() => {
+                          this.goProductDetail(item);
+                        })
+                      Text(item.category ?? '推荐')
+                        .fontSize(11)
+                        .fontColor('#E60012')
+                      Text(item.name)
+                        .fontSize(12)
+                        .maxLines(2)
+                        .textOverflow({ overflow: TextOverflow.Ellipsis })
+                        .onClick(() => {
+                          this.goProductDetail(item);
+                        })
+                      Row() {
+                        Text(`￥${item.price}`)
+                          .fontSize(14)
+                          .fontColor('#E60012')
+                          .fontWeight(FontWeight.Medium)
+                          .layoutWeight(1)
+                        Button('加购')
+                          .fontSize(11)
+                          .height(26)
+                          .padding({ left: 10, right: 10 })
+                          .backgroundColor('#E60012')
+                          .onClick(() => {
+                            this.addToCart(item);
+                          })
+                      }
+                      .width('100%')
+                      .alignItems(VerticalAlign.Center)
+                    }
+                    .alignItems(HorizontalAlign.Start)
+                  }
+                }, (item: Product) => `personal-${item.id}`)
+              }
+              .columnsTemplate('1fr 1fr')
+              .columnsGap(12)
+              .rowsGap(12)
+              .width('100%')
+            }
+            .width('92%')
+            .padding(14)
+            .backgroundColor(Color.White)
+            .borderRadius(12)
+          }
 
           Column({ space: 10 }) {
             Text('分类精选推荐')

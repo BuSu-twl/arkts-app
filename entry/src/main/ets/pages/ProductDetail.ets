@@ -15,6 +15,7 @@ struct ProductDetail {
     const params = router.getParams() as RouteParams;
     if (params && params.product) {
       this.item = params.product;
+      GlobalStore.recordBrowse(this.item.id);
     }
   }
 

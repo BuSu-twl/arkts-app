@@ -128,6 +128,218 @@ export class ProductUtils {
   }
 }
 
+interface CategoryScore {
+  category: string;
+  score: number;
+}
+
+interface ScoredProduct {
+  product: Product;
+  score: number;
+}
+
+/** 基于用户行为的规则推荐 */
+export class RecommendUtils {
+  static addCategoryScore(scores: CategoryScore[], category: string, delta: number): void {
+    if (delta <= 0) {
+      return;
+    }
+    let cat = category.length > 0 ? category : '其他';
+    for (let i = 0; i < scores.length; i++) {
+      if (scores[i].category === cat) {
+        scores[i].score += delta;
+        return;
+      }
+    }
+    scores.push({ category: cat, score: delta });
+  }
+
+  static getCategoryWeight(scores: CategoryScore[], category: string): number {
+    let cat = category.length > 0 ? category : '其他';
+    for (let i = 0; i < scores.length; i++) {
+      if (scores[i].category === cat) {
+        return scores[i].score;
+      }
+    }
+    return 0;
+  }
+
+  static sortCategoryScoresDesc(scores: CategoryScore[]): CategoryScore[] {
+    let result = scores.slice();
+    for (let i = 0; i < result.length - 1; i++) {
+      for (let j = 0; j < result.length - 1 - i; j++) {
+        if (result[j].score < result[j + 1].score) {
+          let temp = result[j];
+          result[j] = result[j + 1];
+          result[j + 1] = temp;
+        }
+      }
+    }
+    return result;
+  }
+
+  static containsId(ids: number[], id: number): boolean {
+    for (let i = 0; i < ids.length; i++) {
+      if (ids[i] === id) {
+        return true;
+      }
+    }
+    return false;
+  }
+
+  static getProductCategory(productId: number, products: Product[]): string {
+    for (let i = 0; i < products.length; i++) {
+      if (products[i].id === productId) {
+        return products[i].category ?? '其他';
+      }
+    }
+    return '其他';
+  }
+
+  static buildCategoryWeights(user: User, browseIds: number[], products: Product[]): CategoryScore[] {
+    let scores: CategoryScore[] = [];
+    let orders = user.orders ?? [];
+    for (let i = 0; i < orders.length; i++) {
+      let items = orders[i].items;
+      for (let j = 0; j < items.length; j++) {
+        let cat = RecommendUtils.getProductCategory(items[j].productId, products);
+        RecommendUtils.addCategoryScore(scores, cat, 5);
+      }
+    }
+    let favIds = user.favoriteIds ?? [];
+    for (let i = 0; i < favIds.length; i++) {
+      let cat = RecommendUtils.getProductCategory(favIds[i], products);
+      RecommendUtils.addCategoryScore(scores, cat, 3);
+    }
+    let cartItems = user.cartItems ?? [];
+    for (let i = 0; i < cartItems.length; i++) {
+      let cat = RecommendUtils.getProductCategory(cartItems[i].productId, products);
+      RecommendUtils.addCategoryScore(scores, cat, 2);
+    }
+    for (let i = 0; i < browseIds.length; i++) {
+      let cat = RecommendUtils.getProductCategory(browseIds[i], products);
+      RecommendUtils.addCategoryScore(scores, cat, 1);
+    }
+    return RecommendUtils.sortCategoryScoresDesc(scores);
+  }
+
+  static getCategoryRankBonus(categoryScores: CategoryScore[], category: string): number {
+    let cat = category.length > 0 ? category : '其他';
+    for (let i = 0; i < categoryScores.length && i < 3; i++) {
+      if (categoryScores[i].category === cat) {
+        if (i === 0) {
+          return 15;
+        }
+        if (i === 1) {
+          return 12;
+        }
+        return 10;
+      }
+    }
+    let weight = RecommendUtils.getCategoryWeight(categoryScores, cat);
+    if (weight > 0) {
+      return 6;
+    }
+    return 0;
+  }
+
+  static scoreProduct(
+    product: Product,
+    categoryScores: CategoryScore[],
+    favoriteIds: number[],
+    cartProductIds: number[],
+    isPurchased: boolean
+  ): number {
+    if (isPurchased) {
+      return -1;
+    }
+    let score = 0;
+    let cat = product.category ?? '其他';
+    score += RecommendUtils.getCategoryRankBonus(categoryScores, cat);
+    if (RecommendUtils.containsId(favoriteIds, product.id)) {
+      score += 8;
+    }
+    if (RecommendUtils.containsId(cartProductIds, product.id)) {
+      score += 5;
+    }
+    score += ProductUtils.parseHotValue(product.hot) / 1000;
+    return score;
+  }
+
+  static sortScoredProductsDesc(items: ScoredProduct[]): ScoredProduct[] {
+    let result = items.slice();
+    for (let i = 0; i < result.length - 1; i++) {
+      for (let j = 0; j < result.length - 1 - i; j++) {
+        if (result[j].score < result[j + 1].score) {
+          let temp = result[j];
+          result[j] = result[j + 1];
+          result[j + 1] = temp;
+        }
+      }
+    }
+    return result;
+  }
+
+  static hasBehaviorSignals(categoryScores: CategoryScore[]): boolean {
+    return categoryScores.length > 0;
+  }
+
+  static getPersonalizedRecommend(
+    products: Product[],
+    user: User | null,
+    browseIds: number[],
+    purchasedIds: number[],
+    count: number
+  ): Product[] {
+    if (products.length === 0 || count <= 0) {
+      return [];
+    }
+    if (user === null) {
+      return ProductUtils.getTopHotProducts(products, count);
+    }
+    let categoryScores = RecommendUtils.buildCategoryWeights(user, browseIds, products);
+    if (!RecommendUtils.hasBehaviorSignals(categoryScores)) {
+      return ProductUtils.getTopHotProducts(products, count);
+    }
+    let favoriteIds = user.favoriteIds ?? [];
+    let cartProductIds: number[] = [];
+    let cartItems = user.cartItems ?? [];
+    for (let i = 0; i < cartItems.length; i++) {
+      cartProductIds.push(cartItems[i].productId);
+    }
+    let scored: ScoredProduct[] = [];
+    for (let i = 0; i < products.length; i++) {
+      let purchased = RecommendUtils.containsId(purchasedIds, products[i].id);
+      let s = RecommendUtils.scoreProduct(products[i], categoryScores, favoriteIds, cartProductIds, purchased);
+      if (s >= 0) {
+        scored.push({ product: products[i], score: s });
+      }
+    }
+    let sorted = RecommendUtils.sortScoredProductsDesc(scored);
+    let result: Product[] = [];
+    for (let i = 0; i < sorted.length && result.length < count; i++) {
+      result.push(sorted[i].product);
+    }
+    if (result.length < count) {
+      let hotFallback = ProductUtils.getTopHotProducts(products, count);
+      for (let i = 0; i < hotFallback.length && result.length < count; i++) {
+        let exists = false;
+        for (let j = 0; j < result.length; j++) {
+          if (result[j].id === hotFallback[i].id) {
+            exists = true;
+            break;
+          }
+        }
+        let purchased = RecommendUtils.containsId(purchasedIds, hotFallback[i].id);
+        if (!exists && !purchased) {
+          result.push(hotFallback[i]);
+        }
+      }
+    }
+    return result;
+  }
+}
+
 export interface RouteParams {
   product: Product;
 }
@@ -182,6 +394,7 @@ export interface User {
   claimedCouponIds: string[];
   cartItems: UserCartItem[];
   favoriteIds: number[];
+  browseHistory?: number[];
   orders: Order[];
   registerTime: string;
 }
@@ -192,8 +405,10 @@ export class GlobalStore {
   static allProducts: Product[] = [];
   static claimedCouponIds: string[] = [];
   static orderList: Order[] = [];
+  static browseHistory: number[] = [];
   static allUsers: User[] = [];
   static currentUser: User | null = null;
+  static readonly MAX_BROWSE_HISTORY: number = 20;
   static usersLoaded: boolean = false;
   static pendingPay: PayRouteParams | null = null;
 
@@ -244,9 +459,18 @@ export class GlobalStore {
       claimedCouponIds: GlobalStore.copyStringArray(u.claimedCouponIds),
       cartItems: GlobalStore.copyCartItems(u.cartItems ?? []),
       favoriteIds: GlobalStore.copyFavoriteIds(u.favoriteIds ?? []),
+      browseHistory: GlobalStore.copyProductIds(u.browseHistory ?? []),
       orders: GlobalStore.copyOrders(u.orders ?? []),
       registerTime: u.registerTime
     };
+  }
+
+  static copyProductIds(ids: number[]): number[] {
+    let result: number[] = [];
+    for (let i = 0; i < ids.length; i++) {
+      result.push(ids[i]);
+    }
+    return result;
   }
 
   static copyCartItems(items: UserCartItem[]): UserCartItem[] {
@@ -311,6 +535,102 @@ export class GlobalStore {
         GlobalStore.favoriteList.push(GlobalStore.buildProductWithCount(source, 1));
       }
     }
+  }
+
+  static loadUserBrowseHistory(user: User): void {
+    GlobalStore.browseHistory = GlobalStore.copyProductIds(user.browseHistory ?? []);
+  }
+
+  static syncBrowseToCurrentUser(): void {
+    if (GlobalStore.currentUser === null) {
+      return;
+    }
+    GlobalStore.currentUser.browseHistory = GlobalStore.copyProductIds(GlobalStore.browseHistory);
+    let source = GlobalStore.findUserById(GlobalStore.currentUser.id);
+    if (source !== null) {
+      source.browseHistory = GlobalStore.copyProductIds(GlobalStore.browseHistory);
+    }
+  }
+
+  static recordBrowse(productId: number): void {
+    if (productId <= 0) {
+      return;
+    }
+    let next: number[] = [];
+    next.push(productId);
+    for (let i = 0; i < GlobalStore.browseHistory.length; i++) {
+      if (GlobalStore.browseHistory[i] !== productId) {
+        next.push(GlobalStore.browseHistory[i]);
+      }
+    }
+    if (next.length > GlobalStore.MAX_BROWSE_HISTORY) {
+      next = next.slice(0, GlobalStore.MAX_BROWSE_HISTORY);
+    }
+    GlobalStore.browseHistory = next;
+    GlobalStore.syncBrowseToCurrentUser();
+  }
+
+  static getPurchasedProductIds(): number[] {
+    let ids: number[] = [];
+    for (let i = 0; i < GlobalStore.orderList.length; i++) {
+      let order = GlobalStore.orderList[i];
+      for (let j = 0; j < order.items.length; j++) {
+        let pid = order.items[j].productId;
+        if (!RecommendUtils.containsId(ids, pid)) {
+          ids.push(pid);
+        }
+      }
+    }
+    return ids;
+  }
+
+  static buildRecommendUserSnapshot(): User | null {
+    if (GlobalStore.currentUser === null) {
+      return null;
+    }
+    let snapshot = GlobalStore.copyUser(GlobalStore.currentUser);
+    let cartItems: UserCartItem[] = [];
+    for (let i = 0; i < GlobalStore.cartList.length; i++) {
+      cartItems.push({
+        productId: GlobalStore.cartList[i].id,
+        count: GlobalStore.cartList[i].count ?? 1
+      });
+    }
+    snapshot.cartItems = GlobalStore.copyCartItems(cartItems);
+    let favIds: number[] = [];
+    for (let i = 0; i < GlobalStore.favoriteList.length; i++) {
+      favIds.push(GlobalStore.favoriteList[i].id);
+    }
+    snapshot.favoriteIds = GlobalStore.copyFavoriteIds(favIds);
+    snapshot.orders = GlobalStore.copyOrders(GlobalStore.orderList);
+    snapshot.browseHistory = GlobalStore.copyProductIds(GlobalStore.browseHistory);
+    return snapshot;
+  }
+
+  static getPersonalizedRecommend(count: number): Product[] {
+    let user = GlobalStore.buildRecommendUserSnapshot();
+    return RecommendUtils.getPersonalizedRecommend(
+      GlobalStore.allProducts,
+      user,
+      GlobalStore.browseHistory,
+      GlobalStore.getPurchasedProductIds(),
+      count
+    );
+  }
+
+  static getPersonalRecommendHint(): string {
+    if (!GlobalStore.isLoggedIn()) {
+      return '登录后根据收藏、购物车与浏览记录推荐';
+    }
+    let user = GlobalStore.buildRecommendUserSnapshot();
+    if (user === null) {
+      return '';
+    }
+    let scores = RecommendUtils.buildCategoryWeights(user, user.browseHistory ?? [], GlobalStore.allProducts);
+    if (!RecommendUtils.hasBehaviorSignals(scores)) {
+      return '暂无足够行为数据，先按热销推荐';
+    }
+    return `Hi，${GlobalStore.getDisplayName()}，根据你的兴趣推荐`;
   }
 
   static syncCartToCurrentUser(): void {
@@ -442,6 +762,7 @@ export class GlobalStore {
     GlobalStore.loadUserOrders(GlobalStore.currentUser);
     GlobalStore.loadUserCart(GlobalStore.currentUser);
     GlobalStore.loadUserFavorites(GlobalStore.currentUser);
+    GlobalStore.loadUserBrowseHistory(GlobalStore.currentUser);
     if (wasGuest && guestCart.length > 0) {
       GlobalStore.mergeCartItemsIntoList(guestCart);
       GlobalStore.syncCartToCurrentUser();
@@ -597,12 +918,14 @@ export class GlobalStore {
 
   static logout(): void {
     GlobalStore.persistSessionOrders();
+    GlobalStore.syncBrowseToCurrentUser();
     GlobalStore.persistSessionCartAndFavorites();
     GlobalStore.currentUser = null;
     GlobalStore.claimedCouponIds = [];
     GlobalStore.orderList = [];
     GlobalStore.cartList = [];
     GlobalStore.favoriteList = [];
+    GlobalStore.browseHistory = [];
   }
 
   static registerUser(phone: string, password: string, smsCode: string): User | null {
@@ -635,6 +958,7 @@ export class GlobalStore {
       claimedCouponIds: [],
       cartItems: [],
       favoriteIds: [],
+      browseHistory: [],
       orders: [],
       registerTime: GlobalStore.formatNow().substring(0, 10)
     };
