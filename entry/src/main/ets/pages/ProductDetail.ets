@@ -1,6 +1,7 @@
 // path: entry/src/main/ets/pages/ProductDetail.ets
 import router from '@ohos.router';
-import { Product, GlobalStore, RouteParams } from '../model/Models';
+import promptAction from '@ohos.promptAction';
+import { Product, GlobalStore, RouteParams, PayRouteParams } from '../model/Models';
 
 @Entry
 @Component
@@ -78,7 +79,11 @@ struct ProductDetail {
         }
         .margin({ right: 20 })
         .onClick(() => {
-          GlobalStore.addToFavorite(this.item);
+          if (!GlobalStore.addToFavorite(this.item)) {
+            promptAction.showToast({ message: '请先登录后再收藏' });
+            router.pushUrl({ url: 'pages/Login' });
+            return;
+          }
           AlertDialog.show({ message: '收藏成功！' });
         })
 
@@ -101,7 +106,13 @@ struct ProductDetail {
           .height(45)
           .layoutWeight(1)
           .onClick(() => {
-            AlertDialog.show({ message: '支付系统对接中...' });
+            router.pushUrl({
+              url: 'pages/PayPage',
+              params: {
+                items: [GlobalStore.toPayItem(this.item, 1)],
+                fromCart: false
+              } as PayRouteParams
+            });
           })
       }
       .width('100%')

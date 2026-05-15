@@ -1,4 +1,8 @@
 import router from '@ohos.router';
+import promptAction from '@ohos.promptAction';
+import { GlobalStore } from '../model/Models';
+import { initAppData } from '../common/AppInit';
+import { navigateAfterLogin } from '../common/LoginNav';
 
 @Entry
 @Component
@@ -6,6 +10,23 @@ struct LoginPage {
   @State account: string = ''
   @State password: string = ''
   @State isPwdShow: boolean = false
+
+  aboutToAppear() {
+    initAppData();
+  }
+
+  doLogin(): void {
+    if (this.account === '' || this.password === '') {
+      promptAction.showToast({ message: '请输入账号和密码' });
+      return;
+    }
+    if (GlobalStore.loginByPassword(this.account, this.password)) {
+      promptAction.showToast({ message: `欢迎回来，${GlobalStore.getDisplayName()}` });
+      navigateAfterLogin();
+    } else {
+      promptAction.showToast({ message: '账号或密码错误' });
+    }
+  }
 
   // 封装跳转方法
   async goPage(url: string) {
@@ -158,12 +179,7 @@ struct LoginPage {
         .backgroundColor('#FF5000')
         .borderRadius(25)
         .onClick(() => {
-          if (this.account === '' || this.password === '') {
-            console.log("请输入账号和密码");
-            return;
-          }
-          console.log("登录成功");
-          router.pushUrl({ url: 'pages/Index' });
+          this.doLogin();
         })
 
       Text('注册账号')

@@ -1,5 +1,6 @@
 // path: entry/src/main/ets/pages/FavoritePage.ets
 import router from '@ohos.router';
+import promptAction from '@ohos.promptAction';
 import { Product, GlobalStore, RouteParams } from '../model/Models';
 
 @Entry
@@ -13,6 +14,10 @@ struct FavoritePage {
     this.recommends = GlobalStore.getRandomRecommend(6);
   }
 
+  onPageShow() {
+    this.refresh();
+  }
+
   refresh() {
     // 触发 UI 响应式刷新的标准动作
     this.favList = [...GlobalStore.favoriteList];
@@ -23,7 +28,7 @@ struct FavoritePage {
       // 1. 顶部导航
       Row() {
         Text("首页").fontSize(16).fontColor('#E60012').fontWeight(FontWeight.Bold)
-          .onClick(() => router.replaceUrl({ url: 'pages/Index' }))
+          .onClick(() => router.replaceUrl({ url: 'pages/HomePage' }))
         //Blank()
         Text("我的收藏").fontSize(18).fontWeight(FontWeight.Bold).padding({left: 100})
         Blank()
@@ -33,11 +38,17 @@ struct FavoritePage {
       List({ space: 15 }) {
         // A. 收藏列表
         ListItem() {
-          if (this.favList.length === 0) {
+          if (!GlobalStore.isLoggedIn()) {
+            Column() {
+              Text("请先登录查看收藏").fontColor('#999').margin({ top: 30 })
+              Button("去登录").backgroundColor('#E60012').margin(15)
+                .onClick(() => router.pushUrl({ url: 'pages/Login' }))
+            }.width('100%')
+          } else if (this.favList.length === 0) {
             Column() {
               Text("收藏空空如也").fontColor('#999').margin({ top: 30 })
               Button("去逛逛").backgroundColor('#E60012').margin(15)
-                .onClick(() => router.replaceUrl({ url: 'pages/Index' }))
+                .onClick(() => router.replaceUrl({ url: 'pages/HomePage' }))
             }.width('100%')
           } else {
             Column() {
@@ -46,9 +57,8 @@ struct FavoritePage {
                   Image($rawfile(item.images[0])).width(60).height(60).borderRadius(8)
                   Text(item.name).layoutWeight(1).margin({ left: 10 }).maxLines(1).fontSize(14)
                   Text("删除").fontColor('#999').fontSize(12).padding(10)
-                    .onClick((event) => {
-                      // 阻止冒泡，防止点击删除时也跳到详情页
-                      GlobalStore.favoriteList.splice(index, 1);
+                    .onClick(() => {
+                      GlobalStore.removeFromFavoriteByIndex(index);
                       this.refresh();
                     })
                 }
@@ -80,7 +90,12 @@ struct FavoritePage {
                   Text(item.name).fontSize(12).maxLines(1).margin(5)
                   Button("收藏").fontSize(10).height(22).backgroundColor('#E60012')
                     .onClick(() => {
-                      GlobalStore.addToFavorite(item);
+                      if (!GlobalStore.addToFavorite(item)) {
+                        promptAction.showToast({ message: '请先登录后再收藏' });
+                        router.pushUrl({ url: 'pages/Login' });
+                        return;
+                      }
+                      promptAction.showToast({ message: '收藏成功' });
                       this.refresh();
                     })
                 }

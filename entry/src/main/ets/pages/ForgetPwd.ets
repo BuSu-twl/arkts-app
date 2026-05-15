@@ -1,5 +1,7 @@
 import router from '@ohos.router';
 import promptAction from '@ohos.promptAction';
+import { GlobalStore } from '../model/Models';
+import { initAppData } from '../common/AppInit';
 
 @Entry
 @Component
@@ -10,6 +12,10 @@ struct ForgetPwd {
   @State confirmPwd: string = '';
   @State countDown: number = 0;
   @State btnEnable: boolean = true;
+
+  aboutToAppear() {
+    initAppData();
+  }
 
   startCountDown(): void {
     this.countDown = 60;
@@ -61,12 +67,12 @@ struct ForgetPwd {
       } catch (e) {}
       return;
     }
-    try {
-      promptAction.showToast({ message: '密码重置成功' });
-    } catch (e) {}
-    try {
+    if (GlobalStore.resetPassword(this.phone, this.code, this.newPwd)) {
+      promptAction.showToast({ message: '密码重置成功，请重新登录' });
       router.back();
-    } catch (e) {}
+    } else {
+      promptAction.showToast({ message: '手机号或验证码错误' });
+    }
   }
 
   build() {

@@ -1,5 +1,8 @@
 import router from '@ohos.router';
 import promptAction from '@ohos.promptAction';
+import { GlobalStore } from '../model/Models';
+import { initAppData } from '../common/AppInit';
+import { navigateAfterLogin } from '../common/LoginNav';
 
 @Entry
 @Component
@@ -8,6 +11,10 @@ struct SmsLogin {
   @State code: string = '';
   @State countDown: number = 0;
   @State btnEnable: boolean = true;
+
+  aboutToAppear() {
+    initAppData();
+  }
 
   startCountDown(): void {
     this.countDown = 60;
@@ -47,12 +54,12 @@ struct SmsLogin {
       } catch (e) {}
       return;
     }
-    try {
-      promptAction.showToast({ message: '登录成功' });
-    } catch (e) {}
-    try {
-      router.back();
-    } catch (e) {}
+    if (GlobalStore.loginBySms(this.phone, this.code)) {
+      promptAction.showToast({ message: `欢迎回来，${GlobalStore.getDisplayName()}` });
+      navigateAfterLogin();
+    } else {
+      promptAction.showToast({ message: '手机号或验证码错误' });
+    }
   }
 
   build() {

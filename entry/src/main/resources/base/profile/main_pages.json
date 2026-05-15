@@ -4,9 +4,14 @@
     "pages/SmsLogin",
     "pages/ForgetPwd",
     "pages/Register",
-    "pages/Index",
+    "pages/HomePage",
+    "pages/RankPage",
+    "pages/ProfilePage",
     "pages/ProductDetail",
     "pages/FavoritePage",
-    "pages/CartPage"
+    "pages/CartPage",
+    "pages/PayPage",
+    "pages/PayResultPage",
+    "pages/OrderListPage"
   ]
 }

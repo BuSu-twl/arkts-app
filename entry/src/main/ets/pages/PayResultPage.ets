@@ -1,0 +1,93 @@
+import router from '@ohos.router';
+import { GlobalStore, PayResultParams } from '../model/Models';
+
+@Entry
+@Component
+struct PayResultPage {
+  @State orderId: string = '';
+  @State payAmount: number = 0;
+  @State payMethod: string = '';
+
+  aboutToAppear() {
+    const params = router.getParams() as PayResultParams;
+    if (params) {
+      this.orderId = params.orderId ?? '';
+      this.payAmount = params.payAmount ?? 0;
+    }
+    let order = GlobalStore.getOrderById(this.orderId);
+    if (order !== null) {
+      this.payMethod = order.payMethod;
+    }
+  }
+
+  getPayMethodLabel(): string {
+    if (this.payMethod === 'wechat') {
+      return '微信支付';
+    }
+    if (this.payMethod === 'alipay') {
+      return '支付宝';
+    }
+    if (this.payMethod === 'balance') {
+      return '余额支付';
+    }
+    return '';
+  }
+
+  build() {
+    Column({ space: 20 }) {
+      Text('支付成功')
+        .fontSize(26)
+        .fontWeight(FontWeight.Bold)
+        .fontColor('#E60012')
+        .margin({ top: 80 })
+
+      Text('✓')
+        .fontSize(48)
+        .fontColor('#52C41A')
+
+      Column({ space: 8 }) {
+        Text(`实付：￥${this.payAmount.toFixed(2)}`)
+          .fontSize(20)
+          .fontWeight(FontWeight.Medium)
+        if (this.getPayMethodLabel().length > 0) {
+          Text(`支付方式：${this.getPayMethodLabel()}`)
+            .fontSize(14)
+            .fontColor('#666666')
+        }
+        Text(`订单号：${this.orderId}`)
+          .fontSize(12)
+          .fontColor('#999999')
+          .margin({ top: 8 })
+      }
+      .padding(20)
+      .backgroundColor(Color.White)
+      .borderRadius(12)
+      .width('85%')
+
+      Row({ space: 16 }) {
+        Button('查看订单')
+          .layoutWeight(1)
+          .height(44)
+          .backgroundColor(Color.White)
+          .fontColor('#E60012')
+          .border({ width: 1, color: '#E60012' })
+          .onClick(() => {
+            router.replaceUrl({ url: 'pages/OrderListPage' });
+          })
+
+        Button('返回首页')
+          .layoutWeight(1)
+          .height(44)
+          .backgroundColor('#E60012')
+          .onClick(() => {
+            router.replaceUrl({ url: 'pages/HomePage' });
+          })
+      }
+      .width('85%')
+      .margin({ top: 24 })
+    }
+    .width('100%')
+    .height('100%')
+    .backgroundColor('#F5F5F5')
+  }
+}

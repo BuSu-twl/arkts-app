@@ -1,0 +1,39 @@
+{
+  "data": [
+    {
+      "id": 1,
+      "account": "13800138000",
+      "phone": "13800138000",
+      "memberName": "zhangsan",
+      "password": "123456",
+      "nickname": "张三",
+      "avatar": "1.png",
+      "smsCode": "888888",
+      "claimedCouponIds": ["c100", "c50"],
+      "cartItems": [
+        { "productId": 1, "count": 1 },
+        { "productId": 3, "count": 2 }
+      ],
+      "favoriteIds": [8, 9],
+      "orders": [],
+      "registerTime": "2025-01-10"
+    },
+    {
+      "id": 2,
+      "account": "13900139000",
+      "phone": "13900139000",
+      "memberName": "lisi",
+      "password": "abc123",
+      "nickname": "李四",
+      "avatar": "2.png",
+      "smsCode": "666666",
+      "claimedCouponIds": [],
+      "cartItems": [
+        { "productId": 2, "count": 1 }
+      ],
+      "favoriteIds": [3],
+      "orders": [],
+      "registerTime": "2025-03-20"
+    }
+  ]
+}
