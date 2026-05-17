@@ -15,7 +15,37 @@
         { "productId": 3, "count": 2 }
       ],
       "favoriteIds": [8, 9],
-      "orders": [],
+      "orders": [
+        {
+          "orderId": "ORD1704960000000",
+          "userId": 1,
+          "items": [
+            { "productId": 1, "name": "商品1", "price": 299, "count": 1, "image": "product1.jpg" }
+          ],
+          "totalAmount": 299,
+          "discount": 10,
+          "payAmount": 289,
+          "couponId": "c50",
+          "payMethod": "wechat",
+          "status": "paid",
+          "createTime": "2025-01-15 14:30"
+        },
+        {
+          "orderId": "ORD1705564800000",
+          "userId": 1,
+          "items": [
+            { "productId": 5, "name": "商品5", "price": 599, "count": 2, "image": "product5.jpg" },
+            { "productId": 8, "name": "商品8", "price": 199, "count": 1, "image": "product8.jpg" }
+          ],
+          "totalAmount": 1397,
+          "discount": 100,
+          "payAmount": 1297,
+          "couponId": "c100",
+          "payMethod": "alipay",
+          "status": "paid",
+          "createTime": "2025-01-22 10:15"
+        }
+      ],
       "registerTime": "2025-01-10"
     },
     {
@@ -32,8 +62,211 @@
         { "productId": 2, "count": 1 }
       ],
       "favoriteIds": [3],
-      "orders": [],
+      "orders": [
+        {
+          "orderId": "ORD1711008000000",
+          "userId": 2,
+          "items": [
+            { "productId": 2, "name": "商品2", "price": 459, "count": 1, "image": "product2.jpg" }
+          ],
+          "totalAmount": 459,
+          "discount": 0,
+          "payAmount": 459,
+          "couponId": "",
+          "payMethod": "wechat",
+          "status": "paid",
+          "createTime": "2025-03-25 16:20"
+        }
+      ],
       "registerTime": "2025-03-20"
+    },
+    {
+      "id": 3,
+      "account": "13700137000",
+      "phone": "13700137000",
+      "memberName": "wangwu",
+      "password": "456789",
+      "nickname": "王五",
+      "avatar": "3.png",
+      "smsCode": "123456",
+      "claimedCouponIds": ["c300", "c100"],
+      "cartItems": [
+        { "productId": 5, "count": 3 },
+        { "productId": 7, "count": 1 }
+      ],
+      "favoriteIds": [2, 4, 6],
+      "orders": [
+        {
+          "orderId": "ORD1708070400000",
+          "userId": 3,
+          "items": [
+            { "productId": 4, "name": "商品4", "price": 799, "count": 1, "image": "product4.jpg" }
+          ],
+          "totalAmount": 799,
+          "discount": 60,
+          "payAmount": 739,
+          "couponId": "c500",
+          "payMethod": "alipay",
+          "status": "paid",
+          "createTime": "2025-02-18 09:45"
+        },
+        {
+          "orderId": "ORD1709280000000",
+          "userId": 3,
+          "items": [
+            { "productId": 9, "name": "商品9", "price": 359, "count": 2, "image": "product9.jpg" },
+            { "productId": 11, "name": "商品11", "price": 129, "count": 3, "image": "product11.jpg" }
+          ],
+          "totalAmount": 1105,
+          "discount": 100,
+          "payAmount": 1005,
+          "couponId": "c100",
+          "payMethod": "wechat",
+          "status": "paid",
+          "createTime": "2025-03-02 14:30"
+        },
+        {
+          "orderId": "ORD1710489600000",
+          "userId": 3,
+          "items": [
+            { "productId": 13, "name": "商品13", "price": 899, "count": 1, "image": "product13.jpg" }
+          ],
+          "totalAmount": 899,
+          "discount": 100,
+          "payAmount": 799,
+          "couponId": "c100",
+          "payMethod": "alipay",
+          "status": "paid",
+          "createTime": "2025-03-16 11:00"
+        }
+      ],
+      "registerTime": "2025-02-15"
+    },
+    {
+      "id": 4,
+      "account": "13600136000",
+      "phone": "13600136000",
+      "memberName": "zhaoliu",
+      "password": "789012",
+      "nickname": "赵六",
+      "avatar": "4.png",
+      "smsCode": "999999",
+      "claimedCouponIds": ["c500"],
+      "cartItems": [
+        { "productId": 10, "count": 2 }
+      ],
+      "favoriteIds": [1, 11, 13],
+      "orders": [
+        {
+          "orderId": "ORD1712390400000",
+          "userId": 4,
+          "items": [
+            { "productId": 6, "name": "商品6", "price": 1299, "count": 1, "image": "product6.jpg" },
+            { "productId": 12, "name": "商品12", "price": 249, "count": 2, "image": "product12.jpg" }
+          ],
+          "totalAmount": 1797,
+          "discount": 100,
+          "payAmount": 1697,
+          "couponId": "c100",
+          "payMethod": "wechat",
+          "status": "paid",
+          "createTime": "2025-04-08 15:30"
+        }
+      ],
+      "registerTime": "2025-04-05"
+    },
+    {
+      "id": 5,
+      "account": "13500135000",
+      "phone": "13500135000",
+      "memberName": "sunqi",
+      "password": "321654",
+      "nickname": "孙七",
+      "avatar": "5.png",
+      "smsCode": "777777",
+      "claimedCouponIds": ["c1000", "c500", "c100"],
+      "cartItems": [],
+      "favoriteIds": [15, 16],
+      "orders": [
+        {
+          "orderId": "ORD1715587200000",
+          "userId": 5,
+          "items": [
+            { "productId": 14, "name": "商品14", "price": 1599, "count": 1, "image": "product14.jpg" }
+          ],
+          "totalAmount": 1599,
+          "discount": 100,
+          "payAmount": 1499,
+          "couponId": "c100",
+          "payMethod": "alipay",
+          "status": "paid",
+          "createTime": "2025-05-15 10:00"
+        },
+        {
+          "orderId": "ORD1716192000000",
+          "userId": 5,
+          "items": [
+            { "productId": 15, "name": "商品15", "price": 2199, "count": 1, "image": "product15.jpg" },
+            { "productId": 3, "name": "商品3", "price": 399, "count": 2, "image": "product3.jpg" }
+          ],
+          "totalAmount": 2997,
+          "discount": 100,
+          "payAmount": 2897,
+          "couponId": "c100",
+          "payMethod": "wechat",
+          "status": "paid",
+          "createTime": "2025-05-22 14:20"
+        }
+      ],
+      "registerTime": "2025-05-12"
+    },
+    {
+      "id": 6,
+      "account": "13400134000",
+      "phone": "13400134000",
+      "memberName": "zhouba",
+      "password": "654321",
+      "nickname": "周八",
+      "avatar": "6.png",
+      "smsCode": "555555",
+      "claimedCouponIds": ["c50"],
+      "cartItems": [
+        { "productId": 8, "count": 1 },
+        { "productId": 12, "count": 4 }
+      ],
+      "favoriteIds": [3, 7, 9, 14],
+      "orders": [
+        {
+          "orderId": "ORD1711612800000",
+          "userId": 6,
+          "items": [
+            { "productId": 7, "name": "商品7", "price": 529, "count": 1, "image": "product7.jpg" }
+          ],
+          "totalAmount": 529,
+          "discount": 0,
+          "payAmount": 529,
+          "couponId": "",
+          "payMethod": "wechat",
+          "status": "paid",
+          "createTime": "2025-04-01 12:00"
+        },
+        {
+          "orderId": "ORD1712217600000",
+          "userId": 6,
+          "items": [
+            { "productId": 10, "name": "商品10", "price": 899, "count": 1, "image": "product10.jpg" },
+            { "productId": 16, "name": "商品16", "price": 179, "count": 2, "image": "product16.jpg" }
+          ],
+          "totalAmount": 1257,
+          "discount": 100,
+          "payAmount": 1157,
+          "couponId": "c100",
+          "payMethod": "alipay",
+          "status": "paid",
+          "createTime": "2025-04-06 09:30"
+        }
+      ],
+      "registerTime": "2025-03-28"
     }
   ]
 }
