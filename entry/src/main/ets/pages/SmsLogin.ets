@@ -3,6 +3,7 @@ import promptAction from '@ohos.promptAction';
 import { GlobalStore } from '../model/Models';
 import { initAppData } from '../common/AppInit';
 import { navigateAfterLogin } from '../common/LoginNav';
+import { AppTheme } from '../common/AppTheme';
 
 @Entry
 @Component
@@ -85,7 +86,7 @@ struct SmsLogin {
         TextInput({ text: this.phone, placeholder: '请输入手机号' })
           .width('100%')
           .height(50)
-          .backgroundColor(Color.White)
+          .backgroundColor(AppTheme.WHITE)
           .borderRadius(8)
           .padding({ left: 15 })
           .onChange((v: string) => { this.phone = v; });
@@ -94,7 +95,7 @@ struct SmsLogin {
           TextInput({ text: this.code, placeholder: '请输入短信验证码' })
             .layoutWeight(1)
             .height(50)
-            .backgroundColor(Color.White)
+            .backgroundColor(AppTheme.WHITE)
             .borderRadius(8)
             .padding({ left: 15 })
             .onChange((v: string) => { this.code = v; });
@@ -102,7 +103,7 @@ struct SmsLogin {
           Button(this.btnEnable ? '获取验证码' : `${this.countDown}s`)
             .width(110)
             .height(50)
-            .backgroundColor(this.btnEnable ? '#FF5000' : '#cccccc')
+            .backgroundColor(this.btnEnable ? AppTheme.PRIMARY : AppTheme.BTN_DISABLED)
             .borderRadius(8)
             .enabled(this.btnEnable)
             .onClick(() => { this.getCode(); });
@@ -112,7 +113,7 @@ struct SmsLogin {
         Button('登录')
           .width('100%')
           .height(50)
-          .backgroundColor('#FF5000')
+          .backgroundColor(AppTheme.PRIMARY)
           .borderRadius(25)
           .onClick(() => { this.doLogin(); });
       }
@@ -120,6 +121,6 @@ struct SmsLogin {
     }
     .width('100%')
     .height('100%')
-    .backgroundColor('#F5F5F5');
+    .backgroundColor(AppTheme.BG_PAGE);
   }
 }

@@ -3,6 +3,34 @@
     {
       "name": "start_window_background",
       "value": "#FFFFFF"
+    },
+    {
+      "name": "theme_primary",
+      "value": "#E60012"
+    },
+    {
+      "name": "theme_primary_light",
+      "value": "#FFF5F5"
+    },
+    {
+      "name": "theme_primary_border",
+      "value": "#FFD6D6"
+    },
+    {
+      "name": "theme_bg_page",
+      "value": "#F5F5F5"
+    },
+    {
+      "name": "theme_text_primary",
+      "value": "#333333"
+    },
+    {
+      "name": "theme_text_secondary",
+      "value": "#666666"
+    },
+    {
+      "name": "theme_text_hint",
+      "value": "#999999"
     }
   ]
 }

@@ -1,5 +1,6 @@
 import router from '@ohos.router';
 import { GlobalStore, PayResultParams } from '../model/Models';
+import { AppTheme } from '../common/AppTheme';
 
 @Entry
 @Component
@@ -38,12 +39,12 @@ struct PayResultPage {
       Text('支付成功')
         .fontSize(26)
         .fontWeight(FontWeight.Bold)
-        .fontColor('#E60012')
+        .fontColor(AppTheme.PRIMARY)
         .margin({ top: 80 })
 
       Text('✓')
         .fontSize(48)
-        .fontColor('#52C41A')
+        .fontColor(AppTheme.PRIMARY)
 
       Column({ space: 8 }) {
         Text(`实付：￥${this.payAmount.toFixed(2)}`)
@@ -52,15 +53,15 @@ struct PayResultPage {
         if (this.getPayMethodLabel().length > 0) {
           Text(`支付方式：${this.getPayMethodLabel()}`)
             .fontSize(14)
-            .fontColor('#666666')
+            .fontColor(AppTheme.TEXT_SECONDARY)
         }
         Text(`订单号：${this.orderId}`)
           .fontSize(12)
-          .fontColor('#999999')
+          .fontColor(AppTheme.TEXT_HINT)
           .margin({ top: 8 })
       }
       .padding(20)
-      .backgroundColor(Color.White)
+      .backgroundColor(AppTheme.WHITE)
       .borderRadius(12)
       .width('85%')
 
@@ -68,9 +69,9 @@ struct PayResultPage {
         Button('查看订单')
           .layoutWeight(1)
           .height(44)
-          .backgroundColor(Color.White)
-          .fontColor('#E60012')
-          .border({ width: 1, color: '#E60012' })
+          .backgroundColor(AppTheme.WHITE)
+          .fontColor(AppTheme.PRIMARY)
+          .border({ width: 1, color: AppTheme.PRIMARY })
           .onClick(() => {
             router.replaceUrl({ url: 'pages/OrderListPage' });
           })
@@ -78,7 +79,7 @@ struct PayResultPage {
         Button('返回首页')
           .layoutWeight(1)
           .height(44)
-          .backgroundColor('#E60012')
+          .backgroundColor(AppTheme.PRIMARY)
           .onClick(() => {
             router.replaceUrl({ url: 'pages/HomePage' });
           })
@@ -88,6 +89,6 @@ struct PayResultPage {
     }
     .width('100%')
     .height('100%')
-    .backgroundColor('#F5F5F5')
+    .backgroundColor(AppTheme.BG_PAGE)
   }
 }

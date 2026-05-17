@@ -2,6 +2,7 @@ import router from '@ohos.router';
 import productData from '../../../mock/product.json';
 import { Product, GlobalStore, RouteParams, ProductUtils } from '../model/Models';
 import { BottomNavBar } from '../components/BottomNavBar';
+import { AppTheme } from '../common/AppTheme';
 
 @Entry
 @Component
@@ -52,11 +53,11 @@ struct RankPage {
         Text('总排行')
           .fontSize(15)
           .fontWeight(this.rankMode === 0 ? FontWeight.Bold : FontWeight.Normal)
-          .fontColor(this.rankMode === 0 ? '#E60012' : '#666666')
+          .fontColor(this.rankMode === 0 ? AppTheme.PRIMARY : AppTheme.TEXT_SECONDARY)
           .layoutWeight(1)
           .textAlign(TextAlign.Center)
           .padding({ top: 10, bottom: 10 })
-          .backgroundColor(this.rankMode === 0 ? Color.White : '#EEEEEE')
+          .backgroundColor(this.rankMode === 0 ? AppTheme.WHITE : AppTheme.BG_DISABLED)
           .borderRadius({ topLeft: 8, bottomLeft: 8 })
           .onClick(() => {
             this.switchMode(0);
@@ -65,11 +66,11 @@ struct RankPage {
         Text('分类排行')
           .fontSize(15)
           .fontWeight(this.rankMode === 1 ? FontWeight.Bold : FontWeight.Normal)
-          .fontColor(this.rankMode === 1 ? '#E60012' : '#666666')
+          .fontColor(this.rankMode === 1 ? AppTheme.PRIMARY : AppTheme.TEXT_SECONDARY)
           .layoutWeight(1)
           .textAlign(TextAlign.Center)
           .padding({ top: 10, bottom: 10 })
-          .backgroundColor(this.rankMode === 1 ? Color.White : '#EEEEEE')
+          .backgroundColor(this.rankMode === 1 ? AppTheme.WHITE : AppTheme.BG_DISABLED)
           .borderRadius({ topRight: 8, bottomRight: 8 })
           .onClick(() => {
             this.switchMode(1);
@@ -79,37 +80,66 @@ struct RankPage {
       .margin({ bottom: 10 })
 
       if (this.rankMode === 1) {
-        Scroll() {
-          Row({ space: 8 }) {
-            ForEach(this.categories, (cat: string) => {
-              Text(cat)
-                .fontSize(13)
-                .fontColor(this.selectedCategory === cat ? Color.White : '#666666')
-                .backgroundColor(this.selectedCategory === cat ? '#E60012' : '#FFFFFF')
-                .padding({ left: 14, right: 14, top: 8, bottom: 8 })
-                .borderRadius(16)
-                .border({
-                  width: 1,
-                  color: this.selectedCategory === cat ? '#E60012' : '#DDDDDD'
-                })
-                .onClick(() => {
-                  this.selectCategory(cat);
-                })
-            }, (cat: string) => cat)
+        Row() {
+          Scroll() {
+            Column() {
+              ForEach(this.categories, (cat: string) => {
+                Text(cat)
+                  .fontSize(13)
+                  .fontColor(this.selectedCategory === cat ? AppTheme.PRIMARY : AppTheme.TEXT_SECONDARY)
+                  .fontWeight(this.selectedCategory === cat ? FontWeight.Medium : FontWeight.Normal)
+                  .backgroundColor(this.selectedCategory === cat ? AppTheme.WHITE : AppTheme.BG_SIDEBAR)
+                  .width('100%')
+                  .textAlign(TextAlign.Center)
+                  .padding({ top: 14, bottom: 14, left: 6, right: 6 })
+                  .maxLines(2)
+                  .textOverflow({ overflow: TextOverflow.Ellipsis })
+                  .border({
+                    width: { left: this.selectedCategory === cat ? 3 : 0 },
+                    color: AppTheme.PRIMARY
+                  })
+                  .onClick(() => {
+                    this.selectCategory(cat);
+                  })
+              }, (cat: string) => cat)
+            }
+            .width('100%')
           }
-          .padding({ left: 4, right: 4 })
-        }
-        .scrollable(ScrollDirection.Horizontal)
-        .scrollBar(BarState.Off)
-        .width('92%')
-        .height(44)
-        .margin({ bottom: 8 })
-      }
+          .scrollBar(BarState.Off)
+          .width(88)
+          .layoutWeight(0)
+          .height('100%')
+          .backgroundColor(AppTheme.BG_SIDEBAR)
 
-      if (this.rankMode === 1 && this.rankList.length === 0) {
-        Text('该分类暂无商品')
+          if (this.rankList.length === 0) {
+            Column() {
+              Text('该分类暂无商品')
+                .fontSize(14)
+                .fontColor(AppTheme.TEXT_HINT)
+            }
+            .layoutWeight(1)
+            .height('100%')
+            .justifyContent(FlexAlign.Center)
+            .alignItems(HorizontalAlign.Center)
+          } else {
+            List({ space: 10 }) {
+              ForEach(this.rankList, (item: Product, index: number) => {
+                ListItem() {
+                  this.RankItem(item, index)
+                }
+              }, (item: Product) => `rank-${this.rankMode}-${item.id}`)
+            }
+            .layoutWeight(1)
+            .padding({ left: 8, right: 12 })
+          }
+        }
+        .layoutWeight(1)
+        .width('100%')
+        .alignItems(VerticalAlign.Top)
+      } else if (this.rankList.length === 0) {
+        Text('暂无排行数据')
           .fontSize(14)
-          .fontColor('#999999')
+          .fontColor(AppTheme.TEXT_HINT)
           .margin({ top: 40 })
           .layoutWeight(1)
       } else {
@@ -129,7 +159,7 @@ struct RankPage {
     }
     .width('100%')
     .height('100%')
-    .backgroundColor('#F5F5F5')
+    .backgroundColor(AppTheme.BG_PAGE)
   }
 
   @Builder
@@ -138,7 +168,7 @@ struct RankPage {
       Text(`${index + 1}`)
         .fontSize(18)
         .fontWeight(FontWeight.Bold)
-        .fontColor(index < 3 ? '#E60012' : '#999999')
+        .fontColor(index < 3 ? AppTheme.PRIMARY : AppTheme.TEXT_HINT)
         .width(28)
         .textAlign(TextAlign.Center)
       Image($rawfile(item.images[0]))
@@ -146,23 +176,18 @@ struct RankPage {
         .height(72)
         .borderRadius(8)
         .objectFit(ImageFit.Cover)
-        .backgroundColor('#EEEEEE')
+        .backgroundColor(AppTheme.BG_DISABLED)
       Column({ space: 4 }) {
-        if (this.rankMode === 1) {
-          Text(item.category ?? '其他')
-            .fontSize(11)
-            .fontColor('#E60012')
-        }
         Text(item.name)
           .fontSize(14)
           .maxLines(2)
           .textOverflow({ overflow: TextOverflow.Ellipsis })
         Text(item.hot)
           .fontSize(12)
-          .fontColor('#999999')
+          .fontColor(AppTheme.TEXT_HINT)
         Text(`￥${item.price}`)
           .fontSize(16)
-          .fontColor('#E60012')
+          .fontColor(AppTheme.PRIMARY)
           .fontWeight(FontWeight.Medium)
       }
       .layoutWeight(1)
@@ -170,7 +195,7 @@ struct RankPage {
     }
     .width('100%')
     .padding(12)
-    .backgroundColor(Color.White)
+    .backgroundColor(AppTheme.WHITE)
     .borderRadius(10)
     .onClick(() => {
       router.pushUrl({ url: 'pages/ProductDetail', params: { product: item } as RouteParams });

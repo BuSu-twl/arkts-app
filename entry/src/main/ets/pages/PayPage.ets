@@ -1,6 +1,7 @@
 import router from '@ohos.router';
 import promptAction from '@ohos.promptAction';
 import { PayItem, Coupon, GlobalStore, PayRouteParams, PayResultParams } from '../model/Models';
+import { AppTheme } from '../common/AppTheme';
 
 @Entry
 @Component
@@ -88,7 +89,7 @@ struct PayPage {
       Row() {
         Text('< 返回')
           .fontSize(16)
-          .fontColor('#333333')
+          .fontColor(AppTheme.TEXT_PRIMARY)
           .onClick(() => {
             router.back();
           })
@@ -102,7 +103,7 @@ struct PayPage {
       }
       .width('100%')
       .padding(16)
-      .backgroundColor(Color.White)
+      .backgroundColor(AppTheme.WHITE)
 
       Scroll() {
         Column({ space: 12 }) {
@@ -117,7 +118,7 @@ struct PayPage {
                   .width(64)
                   .height(64)
                   .borderRadius(8)
-                  .backgroundColor('#EEEEEE')
+                  .backgroundColor(AppTheme.BG_DISABLED)
                 Column({ space: 4 }) {
                   Text(item.name)
                     .fontSize(14)
@@ -126,11 +127,11 @@ struct PayPage {
                   Row() {
                     Text(`￥${item.price}`)
                       .fontSize(14)
-                      .fontColor('#E60012')
+                      .fontColor(AppTheme.PRIMARY)
                     Blank()
                     Text(`x${item.count}`)
                       .fontSize(12)
-                      .fontColor('#999999')
+                      .fontColor(AppTheme.TEXT_HINT)
                   }
                   .width('100%')
                 }
@@ -142,7 +143,7 @@ struct PayPage {
           }
           .width('92%')
           .padding(14)
-          .backgroundColor(Color.White)
+          .backgroundColor(AppTheme.WHITE)
           .borderRadius(12)
 
           Column({ space: 10 }) {
@@ -153,17 +154,17 @@ struct PayPage {
             if (this.usableCoupons.length === 0) {
               Text('暂无可用优惠券（请先在首页领取且满足满减门槛）')
                 .fontSize(12)
-                .fontColor('#999999')
+                .fontColor(AppTheme.TEXT_HINT)
             } else {
               ForEach(this.usableCoupons, (coupon: Coupon) => {
                 Row() {
                   Text(coupon.title)
                     .fontSize(14)
-                    .fontColor('#333333')
+                    .fontColor(AppTheme.TEXT_PRIMARY)
                   Blank()
                   Text(this.selectedCouponId === coupon.id ? '已选' : '使用')
                     .fontSize(12)
-                    .fontColor(this.selectedCouponId === coupon.id ? '#E60012' : '#666666')
+                    .fontColor(this.selectedCouponId === coupon.id ? AppTheme.PRIMARY : AppTheme.TEXT_SECONDARY)
                 }
                 .width('100%')
                 .padding({ top: 8, bottom: 8 })
@@ -175,7 +176,7 @@ struct PayPage {
           }
           .width('92%')
           .padding(14)
-          .backgroundColor(Color.White)
+          .backgroundColor(AppTheme.WHITE)
           .borderRadius(12)
 
           Column({ space: 12 }) {
@@ -189,14 +190,14 @@ struct PayPage {
           }
           .width('92%')
           .padding(14)
-          .backgroundColor(Color.White)
+          .backgroundColor(AppTheme.WHITE)
           .borderRadius(12)
 
           Column({ space: 8 }) {
             Row() {
               Text('商品金额')
                 .fontSize(14)
-                .fontColor('#666666')
+                .fontColor(AppTheme.TEXT_SECONDARY)
               Blank()
               Text(`￥${this.subtotal.toFixed(2)}`)
                 .fontSize(14)
@@ -205,11 +206,11 @@ struct PayPage {
             Row() {
               Text('优惠减免')
                 .fontSize(14)
-                .fontColor('#666666')
+                .fontColor(AppTheme.TEXT_SECONDARY)
               Blank()
               Text(`-￥${this.discount.toFixed(2)}`)
                 .fontSize(14)
-                .fontColor('#E60012')
+                .fontColor(AppTheme.PRIMARY)
             }
             .width('100%')
             Row() {
@@ -219,7 +220,7 @@ struct PayPage {
               Blank()
               Text(`￥${this.payAmount.toFixed(2)}`)
                 .fontSize(20)
-                .fontColor('#E60012')
+                .fontColor(AppTheme.PRIMARY)
                 .fontWeight(FontWeight.Bold)
             }
             .width('100%')
@@ -227,7 +228,7 @@ struct PayPage {
           }
           .width('92%')
           .padding(14)
-          .backgroundColor(Color.White)
+          .backgroundColor(AppTheme.WHITE)
           .borderRadius(12)
           .margin({ bottom: 16 })
         }
@@ -241,7 +242,7 @@ struct PayPage {
           .height(48)
           .fontSize(16)
           .fontWeight(FontWeight.Bold)
-          .backgroundColor(this.paying ? '#CCCCCC' : '#E60012')
+          .backgroundColor(this.paying ? AppTheme.BTN_DISABLED : AppTheme.PRIMARY)
           .enabled(!this.paying && this.payItems.length > 0)
           .onClick(() => {
             this.doPay();
@@ -249,11 +250,11 @@ struct PayPage {
       }
       .width('100%')
       .padding({ top: 12, bottom: 20 })
-      .backgroundColor(Color.White)
+      .backgroundColor(AppTheme.WHITE)
     }
     .width('100%')
     .height('100%')
-    .backgroundColor('#F5F5F5')
+    .backgroundColor(AppTheme.BG_PAGE)
   }
 
   @Builder
@@ -264,7 +265,7 @@ struct PayPage {
       Blank()
       Text(this.payMethod === method ? '●' : '○')
         .fontSize(16)
-        .fontColor(this.payMethod === method ? '#E60012' : '#CCCCCC')
+        .fontColor(this.payMethod === method ? AppTheme.PRIMARY : AppTheme.BTN_DISABLED)
     }
     .width('100%')
     .height(44)

@@ -2,6 +2,7 @@ import router from '@ohos.router';
 import promptAction from '@ohos.promptAction';
 import { GlobalStore } from '../model/Models';
 import { BottomNavBar } from '../components/BottomNavBar';
+import { AppTheme } from '../common/AppTheme';
 
 @Entry
 @Component
@@ -44,16 +45,16 @@ struct ProfilePage {
     Row() {
       Text(title)
         .fontSize(15)
-        .fontColor('#333333')
+        .fontColor(AppTheme.TEXT_PRIMARY)
       Blank()
       Text('>')
         .fontSize(14)
-        .fontColor('#CCCCCC')
+        .fontColor(AppTheme.BTN_DISABLED)
     }
     .width('100%')
     .height(52)
     .padding({ left: 16, right: 16 })
-    .backgroundColor(Color.White)
+    .backgroundColor(AppTheme.WHITE)
     .onClick(onTap)
   }
 
@@ -66,10 +67,10 @@ struct ProfilePage {
             .height(64)
             .borderRadius(32)
             .objectFit(ImageFit.Cover)
-            .backgroundColor('#EEEEEE')
+            .backgroundColor(AppTheme.BG_DISABLED)
         } else {
           Circle({ width: 64, height: 64 })
-            .fill('#E60012')
+            .fill(AppTheme.PRIMARY)
         }
         Text(this.nickname)
           .fontSize(18)
@@ -77,19 +78,19 @@ struct ProfilePage {
         if (this.isLoggedIn) {
           Text(`手机：${this.phone}`)
             .fontSize(13)
-            .fontColor('#666666')
+            .fontColor(AppTheme.TEXT_SECONDARY)
           Text(`会员名：${this.memberName}`)
             .fontSize(12)
-            .fontColor('#999999')
+            .fontColor(AppTheme.TEXT_HINT)
         } else {
           Text('登录后同步优惠券与订单信息')
             .fontSize(13)
-            .fontColor('#999999')
+            .fontColor(AppTheme.TEXT_HINT)
         }
       }
       .width('100%')
       .padding({ top: 40, bottom: 24 })
-      .backgroundColor(Color.White)
+      .backgroundColor(AppTheme.WHITE)
 
       Column({ space: 1 }) {
         this.menuRow('我的订单', () => {
@@ -125,6 +126,6 @@ struct ProfilePage {
     }
     .width('100%')
     .height('100%')
-    .backgroundColor('#F5F5F5')
+    .backgroundColor(AppTheme.BG_PAGE)
   }
 }

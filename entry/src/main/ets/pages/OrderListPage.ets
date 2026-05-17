@@ -1,6 +1,7 @@
 import router from '@ohos.router';
 import promptAction from '@ohos.promptAction';
 import { Order, PayItem, GlobalStore } from '../model/Models';
+import { AppTheme } from '../common/AppTheme';
 
 @Entry
 @Component
@@ -51,16 +52,16 @@ struct OrderListPage {
       }
       .width('100%')
       .padding(16)
-      .backgroundColor(Color.White)
+      .backgroundColor(AppTheme.WHITE)
 
       if (!GlobalStore.isLoggedIn()) {
         Column() {
           Text('请先登录查看订单')
             .fontSize(16)
-            .fontColor('#999999')
+            .fontColor(AppTheme.TEXT_HINT)
             .margin({ top: 80 })
           Button('去登录')
-            .backgroundColor('#E60012')
+            .backgroundColor(AppTheme.PRIMARY)
             .margin({ top: 20 })
             .onClick(() => {
               router.pushUrl({ url: 'pages/Login' });
@@ -71,10 +72,10 @@ struct OrderListPage {
         Column() {
           Text('暂无订单')
             .fontSize(16)
-            .fontColor('#999999')
+            .fontColor(AppTheme.TEXT_HINT)
             .margin({ top: 80 })
           Button('去逛逛')
-            .backgroundColor('#E60012')
+            .backgroundColor(AppTheme.PRIMARY)
             .margin({ top: 20 })
             .onClick(() => {
               router.replaceUrl({ url: 'pages/HomePage' });
@@ -89,11 +90,11 @@ struct OrderListPage {
                 Row() {
                   Text(order.createTime)
                     .fontSize(12)
-                    .fontColor('#999999')
+                    .fontColor(AppTheme.TEXT_HINT)
                   Blank()
                   Text(order.status === 'paid' ? '已支付' : order.status)
                     .fontSize(12)
-                    .fontColor('#E60012')
+                    .fontColor(AppTheme.PRIMARY)
                 }
                 .width('100%')
 
@@ -103,7 +104,7 @@ struct OrderListPage {
                       .width(48)
                       .height(48)
                       .borderRadius(6)
-                      .backgroundColor('#EEEEEE')
+                      .backgroundColor(AppTheme.BG_DISABLED)
                     Column({ space: 2 }) {
                       Text(item.name)
                         .fontSize(13)
@@ -111,7 +112,7 @@ struct OrderListPage {
                         .textOverflow({ overflow: TextOverflow.Ellipsis })
                       Text(`￥${item.price} x${item.count}`)
                         .fontSize(12)
-                        .fontColor('#666666')
+                        .fontColor(AppTheme.TEXT_SECONDARY)
                     }
                     .layoutWeight(1)
                     .alignItems(HorizontalAlign.Start)
@@ -122,11 +123,11 @@ struct OrderListPage {
                 Row() {
                   Text(`${this.getPayMethodLabel(order.payMethod)}支付`)
                     .fontSize(12)
-                    .fontColor('#999999')
+                    .fontColor(AppTheme.TEXT_HINT)
                   Blank()
                   Text(`实付 ￥${order.payAmount.toFixed(2)}`)
                     .fontSize(15)
-                    .fontColor('#E60012')
+                    .fontColor(AppTheme.PRIMARY)
                     .fontWeight(FontWeight.Medium)
                 }
                 .width('100%')
@@ -134,12 +135,12 @@ struct OrderListPage {
 
                 Text(`订单号：${order.orderId}`)
                   .fontSize(11)
-                  .fontColor('#BBBBBB')
+                  .fontColor(AppTheme.TEXT_LIGHT)
                   .width('100%')
               }
               .width('100%')
               .padding(14)
-              .backgroundColor(Color.White)
+              .backgroundColor(AppTheme.WHITE)
               .borderRadius(10)
             }
           }, (order: Order) => order.orderId)
@@ -151,6 +152,6 @@ struct OrderListPage {
     }
     .width('100%')
     .height('100%')
-    .backgroundColor('#F5F5F5')
+    .backgroundColor(AppTheme.BG_PAGE)
   }
 }
