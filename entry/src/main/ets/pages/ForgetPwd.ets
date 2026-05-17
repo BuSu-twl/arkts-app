@@ -2,6 +2,7 @@ import router from '@ohos.router';
 import promptAction from '@ohos.promptAction';
 import { GlobalStore } from '../model/Models';
 import { initAppData } from '../common/AppInit';
+import { AppTheme } from '../common/AppTheme';
 
 @Entry
 @Component
@@ -98,7 +99,7 @@ struct ForgetPwd {
         TextInput({ text: this.phone, placeholder: '请输入手机号' })
           .width('100%')
           .height(50)
-          .backgroundColor(Color.White)
+          .backgroundColor(AppTheme.WHITE)
           .borderRadius(8)
           .padding({ left: 15 })
           .onChange((v: string) => { this.phone = v; });
@@ -107,7 +108,7 @@ struct ForgetPwd {
           TextInput({ text: this.code, placeholder: '请输入验证码' })
             .layoutWeight(1)
             .height(50)
-            .backgroundColor(Color.White)
+            .backgroundColor(AppTheme.WHITE)
             .borderRadius(8)
             .padding({ left: 15 })
             .onChange((v: string) => { this.code = v; });
@@ -115,7 +116,7 @@ struct ForgetPwd {
           Button(this.btnEnable ? '获取验证码' : `${this.countDown}s`)
             .width(110)
             .height(50)
-            .backgroundColor(this.btnEnable ? '#FF5000' : '#ccc')
+            .backgroundColor(this.btnEnable ? AppTheme.PRIMARY : AppTheme.BTN_DISABLED)
             .borderRadius(8)
             .enabled(this.btnEnable)
             .onClick(() => { this.getCode(); });
@@ -125,7 +126,7 @@ struct ForgetPwd {
         TextInput({ text: this.newPwd, placeholder: '请设置新密码' })
           .width('100%')
           .height(50)
-          .backgroundColor(Color.White)
+          .backgroundColor(AppTheme.WHITE)
           .borderRadius(8)
           .padding({ left: 15 })
           .type(InputType.Password)
@@ -134,7 +135,7 @@ struct ForgetPwd {
         TextInput({ text: this.confirmPwd, placeholder: '请再次确认密码' })
           .width('100%')
           .height(50)
-          .backgroundColor(Color.White)
+          .backgroundColor(AppTheme.WHITE)
           .borderRadius(8)
           .padding({ left: 15 })
           .type(InputType.Password)
@@ -143,7 +144,7 @@ struct ForgetPwd {
         Button('重置密码')
           .width('100%')
           .height(50)
-          .backgroundColor('#FF5000')
+          .backgroundColor(AppTheme.PRIMARY)
           .borderRadius(25)
           .onClick(() => { this.resetPwd(); });
       }
@@ -151,6 +152,6 @@ struct ForgetPwd {
     }
     .width('100%')
     .height('100%')
-    .backgroundColor('#F5F5F5');
+    .backgroundColor(AppTheme.BG_PAGE);
   }
 }

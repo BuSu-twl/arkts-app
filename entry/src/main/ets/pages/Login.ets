@@ -3,6 +3,7 @@ import promptAction from '@ohos.promptAction';
 import { GlobalStore } from '../model/Models';
 import { initAppData } from '../common/AppInit';
 import { navigateAfterLogin } from '../common/LoginNav';
+import { AppTheme } from '../common/AppTheme';
 
 @Entry
 @Component
@@ -51,7 +52,7 @@ struct LoginPage {
     }
     .width('100%')
     .height('100%')
-    .backgroundColor('#F5F5F5')
+    .backgroundColor(AppTheme.BG_PAGE)
   }
 
   @Builder StatusBar() {
@@ -59,7 +60,7 @@ struct LoginPage {
       Row() {
         Text('5G')
           .fontSize(12)
-          .fontColor('#333333')
+          .fontColor(AppTheme.TEXT_PRIMARY)
           .margin({ right: 5 })
         Image($r('app.media.ic_signal'))
           .width(18)
@@ -74,7 +75,7 @@ struct LoginPage {
 
       Text('20:30')
         .fontSize(14)
-        .fontColor('#333333')
+        .fontColor(AppTheme.TEXT_PRIMARY)
 
       Row() {
         Image($r('app.media.ic_battery'))
@@ -87,7 +88,7 @@ struct LoginPage {
     .width('100%')
     .height(40)
     .padding({ left: 15, right: 15 })
-    .backgroundColor('#F5F5F5')
+    .backgroundColor(AppTheme.BG_PAGE)
   }
 
   @Builder LogoArea() {
@@ -100,11 +101,11 @@ struct LoginPage {
       Text('登录')
         .fontSize(24)
         .fontWeight(FontWeight.Bold)
-        .fontColor('#FF5000')
+        .fontColor(AppTheme.PRIMARY)
 
       Text('登录账号以使用更多服务')
         .fontSize(14)
-        .fontColor('#999999')
+        .fontColor(AppTheme.TEXT_HINT)
     }
     .width('100%')
     .alignItems(HorizontalAlign.Center)
@@ -116,8 +117,8 @@ struct LoginPage {
         .width('100%')
         .height(50)
         .fontSize(16)
-        .placeholderColor('#999999')
-        .backgroundColor('#FFFFFF')
+        .placeholderColor(AppTheme.TEXT_HINT)
+        .backgroundColor(AppTheme.WHITE)
         .borderRadius(8)
         .padding({ left: 15, right: 15 })
         .onChange((value: string) => {
@@ -129,8 +130,8 @@ struct LoginPage {
           .width('100%')
           .height(50)
           .fontSize(16)
-          .placeholderColor('#999999')
-          .backgroundColor('#FFFFFF')
+          .placeholderColor(AppTheme.TEXT_HINT)
+          .backgroundColor(AppTheme.WHITE)
           .borderRadius(8)
           .padding({ left: 15, right: 50 })
           .type(this.isPwdShow ? InputType.Normal : InputType.Password)
@@ -151,14 +152,14 @@ struct LoginPage {
       Row() {
         Text('短信验证码登录')
           .fontSize(14)
-          .fontColor('#FF5000')
+          .fontColor(AppTheme.PRIMARY)
           .onClick(() => {
             this.goPage('pages/SmsLogin')
           })
 
         Text('忘记密码')
           .fontSize(14)
-          .fontColor('#FF5000')
+          .fontColor(AppTheme.PRIMARY)
           .onClick(() => {
             this.goPage('pages/ForgetPwd')
           })
@@ -176,7 +177,7 @@ struct LoginPage {
         .height(50)
         .fontSize(18)
         .fontWeight(FontWeight.Bold)
-        .backgroundColor('#FF5000')
+        .backgroundColor(AppTheme.PRIMARY)
         .borderRadius(25)
         .onClick(() => {
           this.doLogin();
@@ -184,7 +185,7 @@ struct LoginPage {
 
       Text('注册账号')
         .fontSize(14)
-        .fontColor('#FF5000')
+        .fontColor(AppTheme.PRIMARY)
         .onClick(() => {
           this.goPage('pages/Register')
         })
@@ -198,15 +199,15 @@ struct LoginPage {
         Divider()
           .layoutWeight(1)
           .strokeWidth(1)
-          .color('#EEEEEE')
+          .color(AppTheme.BORDER)
         Text('其他方式登录')
           .fontSize(12)
-          .fontColor('#999999')
+          .fontColor(AppTheme.TEXT_HINT)
           .margin({ left: 15, right: 15 })
         Divider()
           .layoutWeight(1)
           .strokeWidth(1)
-          .color('#EEEEEE')
+          .color(AppTheme.BORDER)
       }
       .width('100%')
 

@@ -3,6 +3,7 @@ import promptAction from '@ohos.promptAction';
 import productData from '../../../mock/product.json';
 import { Product, Coupon, GlobalStore, RouteParams, ProductUtils } from '../model/Models';
 import { BottomNavBar } from '../components/BottomNavBar';
+import { AppTheme } from '../common/AppTheme';
 
 @Entry
 @Component
@@ -89,21 +90,21 @@ struct HomePage {
                     .height(180)
                     .objectFit(ImageFit.Cover)
                     .borderRadius(12)
-                    .backgroundColor('#EEEEEE')
+                    .backgroundColor(AppTheme.BG_DISABLED)
                   Column() {
                     Text(item.name)
                       .fontSize(13)
-                      .fontColor(Color.White)
+                      .fontColor(AppTheme.WHITE)
                       .maxLines(1)
                       .textOverflow({ overflow: TextOverflow.Ellipsis })
                     Text(`￥${item.price}  ·  ${item.hot}`)
                       .fontSize(12)
-                      .fontColor('#FFEEEE')
+                      .fontColor(AppTheme.PRIMARY_TEXT_SOFT)
                       .margin({ top: 4 })
                   }
                   .width('100%')
                   .padding(12)
-                  .backgroundColor('#66000000')
+                  .backgroundColor(AppTheme.PRIMARY_OVERLAY)
                 }
                 .width('100%')
                 .height(180)
@@ -128,7 +129,7 @@ struct HomePage {
                 .fontWeight(FontWeight.Bold)
               Text('点击领取')
                 .fontSize(12)
-                .fontColor('#999999')
+                .fontColor(AppTheme.TEXT_HINT)
                 .margin({ left: 8 })
             }
             .width('100%')
@@ -139,24 +140,24 @@ struct HomePage {
                   Column({ space: 6 }) {
                     Text(`￥${coupon.discount}`)
                       .fontSize(20)
-                      .fontColor('#E60012')
+                      .fontColor(AppTheme.PRIMARY)
                       .fontWeight(FontWeight.Bold)
                     Text(coupon.title)
                       .fontSize(11)
-                      .fontColor('#666666')
+                      .fontColor(AppTheme.TEXT_SECONDARY)
                     Text(this.isClaimed(coupon.id) ? '已领取' : '立即领取')
                       .fontSize(11)
-                      .fontColor(this.isClaimed(coupon.id) ? '#999999' : Color.White)
-                      .backgroundColor(this.isClaimed(coupon.id) ? '#EEEEEE' : '#E60012')
+                      .fontColor(this.isClaimed(coupon.id) ? AppTheme.TEXT_HINT : AppTheme.WHITE)
+                      .backgroundColor(this.isClaimed(coupon.id) ? AppTheme.BG_DISABLED : AppTheme.PRIMARY)
                       .padding({ left: 10, right: 10, top: 4, bottom: 4 })
                       .borderRadius(12)
                       .margin({ top: 4 })
                   }
                   .width(110)
                   .padding(12)
-                  .backgroundColor('#FFF5F5')
+                  .backgroundColor(AppTheme.PRIMARY_LIGHT)
                   .borderRadius(10)
-                  .border({ width: 1, color: '#FFD6D6' })
+                  .border({ width: 1, color: AppTheme.PRIMARY_BORDER })
                   .onClick(() => {
                     this.claimCoupon(coupon);
                   })
@@ -169,7 +170,7 @@ struct HomePage {
           }
           .width('92%')
           .padding(14)
-          .backgroundColor(Color.White)
+          .backgroundColor(AppTheme.WHITE)
           .borderRadius(12)
 
           if (this.personalRecommends.length > 0) {
@@ -180,7 +181,7 @@ struct HomePage {
                   .fontWeight(FontWeight.Bold)
                 Text(this.personalHint)
                   .fontSize(11)
-                  .fontColor('#999999')
+                  .fontColor(AppTheme.TEXT_HINT)
                   .margin({ left: 8 })
                   .maxLines(1)
                   .textOverflow({ overflow: TextOverflow.Ellipsis })
@@ -197,13 +198,13 @@ struct HomePage {
                         .aspectRatio(1)
                         .objectFit(ImageFit.Cover)
                         .borderRadius(8)
-                        .backgroundColor('#EEEEEE')
+                        .backgroundColor(AppTheme.BG_DISABLED)
                         .onClick(() => {
                           this.goProductDetail(item);
                         })
                       Text(item.category ?? '推荐')
                         .fontSize(11)
-                        .fontColor('#E60012')
+                        .fontColor(AppTheme.PRIMARY)
                       Text(item.name)
                         .fontSize(12)
                         .maxLines(2)
@@ -214,14 +215,14 @@ struct HomePage {
                       Row() {
                         Text(`￥${item.price}`)
                           .fontSize(14)
-                          .fontColor('#E60012')
+                          .fontColor(AppTheme.PRIMARY)
                           .fontWeight(FontWeight.Medium)
                           .layoutWeight(1)
                         Button('加购')
                           .fontSize(11)
                           .height(26)
                           .padding({ left: 10, right: 10 })
-                          .backgroundColor('#E60012')
+                          .backgroundColor(AppTheme.PRIMARY)
                           .onClick(() => {
                             this.addToCart(item);
                           })
@@ -240,7 +241,7 @@ struct HomePage {
             }
             .width('92%')
             .padding(14)
-            .backgroundColor(Color.White)
+            .backgroundColor(AppTheme.WHITE)
             .borderRadius(12)
           }
 
@@ -259,13 +260,13 @@ struct HomePage {
                       .aspectRatio(1)
                       .objectFit(ImageFit.Cover)
                       .borderRadius(8)
-                      .backgroundColor('#EEEEEE')
+                      .backgroundColor(AppTheme.BG_DISABLED)
                       .onClick(() => {
                         this.goProductDetail(item);
                       })
                     Text(item.category ?? '推荐')
                       .fontSize(11)
-                      .fontColor('#E60012')
+                      .fontColor(AppTheme.PRIMARY)
                     Text(item.name)
                       .fontSize(12)
                       .maxLines(2)
@@ -276,14 +277,14 @@ struct HomePage {
                     Row() {
                       Text(`￥${item.price}`)
                         .fontSize(14)
-                        .fontColor('#E60012')
+                        .fontColor(AppTheme.PRIMARY)
                         .fontWeight(FontWeight.Medium)
                         .layoutWeight(1)
                       Button('加购')
                         .fontSize(11)
                         .height(26)
                         .padding({ left: 10, right: 10 })
-                        .backgroundColor('#E60012')
+                        .backgroundColor(AppTheme.PRIMARY)
                         .onClick(() => {
                           this.addToCart(item);
                         })
@@ -302,7 +303,7 @@ struct HomePage {
           }
           .width('92%')
           .padding(14)
-          .backgroundColor(Color.White)
+          .backgroundColor(AppTheme.WHITE)
           .borderRadius(12)
           .margin({ bottom: 16 })
         }
@@ -316,6 +317,6 @@ struct HomePage {
     }
     .width('100%')
     .height('100%')
-    .backgroundColor('#F5F5F5')
+    .backgroundColor(AppTheme.BG_PAGE)
   }
 }

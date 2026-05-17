@@ -3,6 +3,7 @@ import promptAction from '@ohos.promptAction';
 import { GlobalStore } from '../model/Models';
 import { initAppData } from '../common/AppInit';
 import { navigateAfterLogin } from '../common/LoginNav';
+import { AppTheme } from '../common/AppTheme';
 
 @Entry
 @Component
@@ -145,7 +146,7 @@ struct Register {
           TextInput({ text: this.phone, placeholder: '请输入11位手机号' })
             .width('100%')
             .height(50)
-            .backgroundColor(Color.White)
+            .backgroundColor(AppTheme.WHITE)
             .borderRadius(8)
             .padding({ left: 15, right: 15 })
             .maxLength(11)
@@ -157,7 +158,7 @@ struct Register {
           Column({ space: 8 }) {
             Text('请输入下方验证码（区分大小写无，仅数字）')
               .fontSize(12)
-              .fontColor('#999999')
+              .fontColor(AppTheme.TEXT_HINT)
               .width('100%')
 
             Row({ space: 10 }) {
@@ -165,21 +166,21 @@ struct Register {
                 Text(this.hasCaptcha ? this.generatedCode : '------')
                   .fontSize(24)
                   .fontWeight(FontWeight.Bold)
-                  .fontColor('#E60012')
+                  .fontColor(AppTheme.PRIMARY)
                   .letterSpacing(8)
               }
               .layoutWeight(1)
               .height(52)
               .justifyContent(FlexAlign.Center)
-              .backgroundColor('#FFF5F0')
+              .backgroundColor(AppTheme.PRIMARY_SOFT)
               .borderRadius(8)
-              .border({ width: 1, color: '#FFD6D6' })
+              .border({ width: 1, color: AppTheme.PRIMARY_BORDER })
 
               Button(this.btnEnable ? '换一张' : `${this.countDown}s`)
                 .width(96)
                 .height(52)
                 .fontSize(14)
-                .backgroundColor(this.btnEnable ? '#FF5000' : '#CCCCCC')
+                .backgroundColor(this.btnEnable ? AppTheme.PRIMARY : AppTheme.BTN_DISABLED)
                 .borderRadius(8)
                 .enabled(this.btnEnable)
                 .onClick(() => {
@@ -191,7 +192,7 @@ struct Register {
             TextInput({ text: this.code, placeholder: '请输入验证码' })
               .width('100%')
               .height(50)
-              .backgroundColor(Color.White)
+              .backgroundColor(AppTheme.WHITE)
               .borderRadius(8)
               .padding({ left: 15, right: 15 })
               .maxLength(6)
@@ -206,7 +207,7 @@ struct Register {
             TextInput({ text: this.pwd, placeholder: '请设置登录密码（至少6位）' })
               .width('100%')
               .height(50)
-              .backgroundColor(Color.White)
+              .backgroundColor(AppTheme.WHITE)
               .borderRadius(8)
               .padding({ left: 15, right: 50 })
               .type(this.isPwdShow ? InputType.Normal : InputType.Password)
@@ -227,7 +228,7 @@ struct Register {
           TextInput({ text: this.confirmPwd, placeholder: '请再次输入密码' })
             .width('100%')
             .height(50)
-            .backgroundColor(Color.White)
+            .backgroundColor(AppTheme.WHITE)
             .borderRadius(8)
             .padding({ left: 15, right: 15 })
             .type(this.isPwdShow ? InputType.Normal : InputType.Password)
@@ -240,7 +241,7 @@ struct Register {
             .height(50)
             .fontSize(18)
             .fontWeight(FontWeight.Bold)
-            .backgroundColor('#FF5000')
+            .backgroundColor(AppTheme.PRIMARY)
             .borderRadius(25)
             .onClick(() => {
               this.doRegister();
@@ -248,7 +249,7 @@ struct Register {
 
           Text('已有账号？去登录')
             .fontSize(14)
-            .fontColor('#FF5000')
+            .fontColor(AppTheme.PRIMARY)
             .onClick(() => {
               router.replaceUrl({ url: 'pages/Login' });
             });
@@ -259,6 +260,6 @@ struct Register {
     }
     .width('100%')
     .height('100%')
-    .backgroundColor('#F5F5F5');
+    .backgroundColor(AppTheme.BG_PAGE);
   }
 }

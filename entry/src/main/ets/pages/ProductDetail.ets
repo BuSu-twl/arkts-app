@@ -2,6 +2,7 @@
 import router from '@ohos.router';
 import promptAction from '@ohos.promptAction';
 import { Product, GlobalStore, RouteParams, PayRouteParams } from '../model/Models';
+import { AppTheme } from '../common/AppTheme';
 
 @Entry
 @Component
@@ -27,11 +28,11 @@ struct ProductDetail {
           .width('100%')
           .height(350)
           .objectFit(ImageFit.Contain)
-          .backgroundColor('#F9F9F9')
+          .backgroundColor(AppTheme.BG_SECTION)
 
         // 返回按钮
-        Circle({ width: 40, height: 40 }).fill('#80000000').margin(15).onClick(() => router.back())
-        Text("<").fontColor(Color.White).fontSize(20).margin({ left: 28, top: 22 }).onClick(() => router.back())
+        Circle({ width: 40, height: 40 }).fill(AppTheme.OVERLAY_BACK).margin(15).onClick(() => router.back())
+        Text("<").fontColor(AppTheme.WHITE).fontSize(20).margin({ left: 28, top: 22 }).onClick(() => router.back())
       }
 
       // 2. 滚动内容区
@@ -39,10 +40,10 @@ struct ProductDetail {
         Column() {
           // 价格与热度
           Row() {
-            Text(`￥`).fontSize(18).fontColor('#E60012').margin({ top: 5 })
-            Text(`${this.item.price}`).fontSize(28).fontColor('#E60012').fontWeight(FontWeight.Bold)
+            Text(`￥`).fontSize(18).fontColor(AppTheme.PRIMARY).margin({ top: 5 })
+            Text(`${this.item.price}`).fontSize(28).fontColor(AppTheme.PRIMARY).fontWeight(FontWeight.Bold)
             Blank()
-            Text(this.item.hot).fontSize(12).fontColor('#999').backgroundColor('#F5F5F5').padding(5).borderRadius(4)
+            Text(this.item.hot).fontSize(12).fontColor(AppTheme.TEXT_HINT).backgroundColor(AppTheme.BG_PAGE).padding(5).borderRadius(4)
           }.width('100%').alignItems(VerticalAlign.Bottom)
 
           // 商品标题
@@ -50,20 +51,20 @@ struct ProductDetail {
 
           // 店铺名片区
           Row() {
-            Circle({ width: 45, height: 45 }).fill('#E0E0E0')
+            Circle({ width: 45, height: 45 }).fill(AppTheme.BG_DISABLED)
             Column() {
               Text(this.item.shopname).fontSize(15).fontWeight(FontWeight.Medium)
-              Text("进店逛逛 >").fontSize(12).fontColor('#999').margin({ top: 3 })
+              Text("进店逛逛 >").fontSize(12).fontColor(AppTheme.TEXT_HINT).margin({ top: 3 })
             }.margin({ left: 12 }).alignItems(HorizontalAlign.Start)
             Blank()
-            Button("关注").fontSize(12).height(28).width(60).backgroundColor(Color.White)
-              .fontColor(Color.Black).border({ width: 1, color: '#DDD' })
+            Button("关注").fontSize(12).height(28).width(60).backgroundColor(AppTheme.WHITE)
+              .fontColor(AppTheme.PRIMARY).border({ width: 1, color: AppTheme.PRIMARY })
           }
-          .width('100%').margin({ top: 20, bottom: 20 }).padding(15).backgroundColor('#FAFAFA').borderRadius(12)
+          .width('100%').margin({ top: 20, bottom: 20 }).padding(15).backgroundColor(AppTheme.BG_SECTION).borderRadius(12)
 
           // 详情描述
           Text("商品详情").fontSize(16).fontWeight(FontWeight.Bold).margin({ top: 10, bottom: 10 })
-          Text(this.item.description).fontSize(14).fontColor('#555').lineHeight(22).margin({ bottom: 100 })
+          Text(this.item.description).fontSize(14).fontColor(AppTheme.TEXT_BODY).lineHeight(22).margin({ bottom: 100 })
         }
         .padding(20).alignItems(HorizontalAlign.Start)
       }.layoutWeight(1)
@@ -92,7 +93,9 @@ struct ProductDetail {
 
         // 操作按钮：加入购物车
         Button("加入购物车")
-          .backgroundColor('#FFBA00')
+          .backgroundColor(AppTheme.WHITE)
+          .fontColor(AppTheme.PRIMARY)
+          .border({ width: 1, color: AppTheme.PRIMARY })
           .height(45)
           .layoutWeight(1)
           .margin({ right: 10 })
@@ -103,7 +106,8 @@ struct ProductDetail {
 
         // 操作按钮：立即购买
         Button("立即购买")
-          .backgroundColor('#E60012')
+          .backgroundColor(AppTheme.PRIMARY)
+          .fontColor(AppTheme.TEXT_ON_PRIMARY)
           .height(45)
           .layoutWeight(1)
           .onClick(() => {
@@ -118,10 +122,10 @@ struct ProductDetail {
       }
       .width('100%')
       .padding({ left: 20, right: 20, top: 10, bottom: 10 })
-      .backgroundColor(Color.White)
-      .shadow({ radius: 10, color: '#10000000', offsetY: -5 })
+      .backgroundColor(AppTheme.WHITE)
+      .shadow({ radius: 10, color: AppTheme.SHADOW, offsetY: -5 })
     }
-    .backgroundColor(Color.White)
+    .backgroundColor(AppTheme.WHITE)
     .height('100%')
   }
 }
