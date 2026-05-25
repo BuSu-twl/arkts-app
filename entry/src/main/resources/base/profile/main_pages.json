@@ -12,6 +12,7 @@
     "pages/CartPage",
     "pages/PayPage",
     "pages/PayResultPage",
-    "pages/OrderListPage"
+    "pages/OrderListPage",
+    "pages/edit"
   ]
 }

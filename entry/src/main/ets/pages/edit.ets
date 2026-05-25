@@ -1,6 +1,9 @@
 import router from '@ohos.router';
 import promptAction from '@ohos.promptAction';
 import { GlobalStore } from '../model/Models';
+import picker from '@ohos.file.picker';
+import fs from '@ohos.file.fs';
+import util from '@ohos.util';
 
 @Entry
 @Component
@@ -13,6 +16,12 @@ struct EditProfilePage {
   @State address: string = ''
   @State showPasswordSection: boolean = false
   @State avatarIndex: number = 0
+  @State customAvatarPath: string = ''
+  @State showPhoneChangeSection: boolean = false
+  @State newPhone: string = ''
+  @State phoneVerifyCode: string = ''
+  @State phoneCountDown: number = 0
+  @State phoneBtnEnable: boolean = true
 
   aboutToAppear() {
     if (GlobalStore.currentUser !== null) {
@@ -21,18 +30,124 @@ struct EditProfilePage {
       this.address = this.getAddressFromUser();
       let avatarName = GlobalStore.currentUser.avatar;
       if (avatarName.length > 0) {
-        let num = parseInt(avatarName.replace('.png', ''));
-        if (!isNaN(num)) {
-          this.avatarIndex = num;
+        if (avatarName.startsWith('custom_')) {
+          this.customAvatarPath = avatarName;
+          this.avatarIndex = 0;
+        } else {
+          let num = parseInt(avatarName.replace('.png', ''));
+          if (!isNaN(num)) {
+            this.avatarIndex = num;
+          }
         }
       }
     }
   }
 
   getAddressFromUser(): string {
-    // 这里可以从用户信息中获取地址，如果 User 接口有 address 字段
-    // 目前先返回空字符串或默认值
     return '';
+  }
+
+  startPhoneCountDown(): void {
+    this.phoneCountDown = 60;
+    this.phoneBtnEnable = false;
+    const timer: number = setInterval((): void => {
+      this.phoneCountDown--;
+      if (this.phoneCountDown <= 0) {
+        clearInterval(timer);
+        this.phoneBtnEnable = true;
+      }
+    }, 1000);
+  }
+
+  sendPhoneVerifyCode(): void {
+    if (this.newPhone.length !== 11) {
+      promptAction.showToast({ message: '请输入正确的11位手机号' });
+      return;
+    }
+
+    if (this.newPhone === this.phone) {
+      promptAction.showToast({ message: '新手机号不能与原手机号相同' });
+      return;
+    }
+
+    this.startPhoneCountDown();
+    promptAction.showToast({ message: '验证码已发送到新手机号' });
+  }
+
+  changePhone() {
+    if (this.newPhone.length !== 11) {
+      promptAction.showToast({ message: '请输入正确的11位手机号' });
+      return;
+    }
+
+    if (this.newPhone === this.phone) {
+      promptAction.showToast({ message: '新手机号不能与原手机号相同' });
+      return;
+    }
+
+    if (this.phoneVerifyCode.length === 0) {
+      promptAction.showToast({ message: '请输入验证码' });
+      return;
+    }
+
+    if (GlobalStore.currentUser === null) {
+      promptAction.showToast({ message: '用户未登录' });
+      return;
+    }
+
+    GlobalStore.currentUser.phone = this.newPhone;
+    GlobalStore.currentUser.account = this.newPhone;
+
+    let user = GlobalStore.findUserById(GlobalStore.currentUser.id);
+    if (user !== null) {
+      user.phone = this.newPhone;
+      user.account = this.newPhone;
+    }
+
+    this.phone = this.newPhone;
+    this.newPhone = '';
+    this.phoneVerifyCode = '';
+    this.showPhoneChangeSection = false;
+
+    promptAction.showToast({ message: '手机号修改成功' });
+  }
+
+  async selectCustomAvatar() {
+    try {
+      let photoSelectOptions = new picker.PhotoSelectOptions();
+      photoSelectOptions.MIMEType = picker.PhotoViewMIMETypes.IMAGE_TYPE;
+      photoSelectOptions.maxSelectNumber = 1;
+
+      let photoPicker = new picker.PhotoViewPicker();
+      let photoSelectResult = await photoPicker.select(photoSelectOptions);
+
+      if (photoSelectResult && photoSelectResult.photoUris && photoSelectResult.photoUris.length > 0) {
+        let selectedUri = photoSelectResult.photoUris[0];
+
+        let context = getContext(this);
+        let filesDir = context.filesDir;
+        let fileName = `custom_${Date.now()}.png`;
+        let destPath = `${filesDir}/${fileName}`;
+
+        let file = fs.openSync(selectedUri, fs.OpenMode.READ_ONLY);
+        let stat = fs.statSync(selectedUri);
+        let buffer = new ArrayBuffer(stat.size);
+        fs.readSync(file.fd, buffer);
+        fs.closeSync(file);
+
+        let destFile = fs.openSync(destPath, fs.OpenMode.CREATE | fs.OpenMode.READ_WRITE);
+        fs.writeSync(destFile.fd, buffer);
+        fs.closeSync(destFile);
+
+        this.customAvatarPath = fileName;
+        this.avatarIndex = 0;
+
+        promptAction.showToast({ message: '头像已选择' });
+      }
+    } catch (error) {
+      console.error('选择头像失败:', error);
+      promptAction.showToast({ message: '选择头像失败' });
+    }
   }
 
   saveProfile() {
@@ -43,13 +158,21 @@ struct EditProfilePage {
 
     if (GlobalStore.currentUser !== null) {
       GlobalStore.currentUser.nickname = this.nickname;
-      GlobalStore.currentUser.avatar = `${this.avatarIndex}.png`;
 
-      // 同步到 allUsers 中
+      if (this.customAvatarPath.length > 0) {
+        GlobalStore.currentUser.avatar = this.customAvatarPath;
+      } else {
+        GlobalStore.currentUser.avatar = `${this.avatarIndex}.png`;
+      }
+
       let user = GlobalStore.findUserById(GlobalStore.currentUser.id);
       if (user !== null) {
         user.nickname = this.nickname;
-        user.avatar = `${this.avatarIndex}.png`;
+        if (this.customAvatarPath.length > 0) {
+          user.avatar = this.customAvatarPath;
+        } else {
+          user.avatar = `${this.avatarIndex}.png`;
+        }
       }
 
       promptAction.showToast({ message: '保存成功' });
@@ -104,16 +227,15 @@ struct EditProfilePage {
     }
 
     promptAction.showToast({ message: '地址保存成功' });
-    // 这里可以添加保存地址的逻辑
   }
 
   selectAvatar(index: number) {
     this.avatarIndex = index;
+    this.customAvatarPath = '';
   }
 
   build() {
     Column() {
-      // 标题栏
       Row() {
         Text('返回')
           .fontSize(16)
@@ -142,13 +264,48 @@ struct EditProfilePage {
 
       Scroll() {
         Column({ space: 15 }) {
-          // 头像选择区域
           Column({ space: 10 }) {
             Text('头像')
               .fontSize(16)
               .fontColor('#333333')
               .width('100%')
               .padding({ left: 15 })
+
+            Row() {
+              if (this.customAvatarPath.length > 0) {
+                Image(`file://${getContext(this).filesDir}/${this.customAvatarPath}`)
+                  .width(80)
+                  .height(80)
+                  .borderRadius(40)
+                  .objectFit(ImageFit.Cover)
+              } else {
+                Image($r(`app.media.${this.avatarIndex}`))
+                  .width(80)
+                  .height(80)
+                  .borderRadius(40)
+                  .objectFit(ImageFit.Cover)
+              }
+            }
+            .width('100%')
+            .justifyContent(FlexAlign.Center)
+            .padding({ top: 10, bottom: 10 })
+
+            Button('上传自定义头像')
+              .width('90%')
+              .height(45)
+              .fontSize(16)
+              .backgroundColor('#4CAF50')
+              .borderRadius(8)
+              .onClick(() => {
+                this.selectCustomAvatar();
+              })
+
+            Text('或选择预设头像')
+              .fontSize(14)
+              .fontColor('#999999')
+              .width('100%')
+              .textAlign(TextAlign.Center)
+              .padding({ top: 10 })
 
             Row({ space: 15 }) {
               ForEach([1, 2, 3, 4, 5, 6], (index: number) => {
@@ -157,7 +314,7 @@ struct EditProfilePage {
                   .height(60)
                   .borderRadius(30)
                   .border({
-                    width: this.avatarIndex === index ? 3 : 0,
+                    width: (this.avatarIndex === index && this.customAvatarPath.length === 0) ? 3 : 0,
                     color: '#FF5000'
                   })
                   .onClick(() => {
@@ -173,7 +330,6 @@ struct EditProfilePage {
           .padding({ top: 15, bottom: 15 })
           .backgroundColor('#FFFFFF')
 
-          // 昵称编辑
           Column({ space: 10 }) {
             Text('昵称')
               .fontSize(16)
@@ -196,25 +352,92 @@ struct EditProfilePage {
           .padding({ top: 15, bottom: 15 })
           .backgroundColor('#FFFFFF')
 
-          // 手机号显示（只读）
           Column({ space: 10 }) {
-            Text('手机号')
-              .fontSize(16)
-              .fontColor('#333333')
-              .width('100%')
-              .padding({ left: 15 })
+            Row() {
+              Text('手机号')
+                .fontSize(16)
+                .fontColor('#333333')
+                .layoutWeight(1)
+
+              Text(this.showPhoneChangeSection ? '收起' : '修改')
+                .fontSize(14)
+                .fontColor('#FF5000')
+                .onClick(() => {
+                  this.showPhoneChangeSection = !this.showPhoneChangeSection;
+                  if (!this.showPhoneChangeSection) {
+                    this.newPhone = '';
+                    this.phoneVerifyCode = '';
+                  }
+                })
+            }
+            .width('90%')
+            .padding({ left: 15, right: 15 })
 
             Text(this.phone)
               .fontSize(16)
               .fontColor('#999999')
               .width('90%')
               .padding({ left: 15 })
+
+            if (this.showPhoneChangeSection) {
+              Column({ space: 10 }) {
+                TextInput({ text: this.newPhone, placeholder: '请输入新手机号' })
+                  .width('100%')
+                  .height(50)
+                  .fontSize(16)
+                  .type(InputType.Number)
+                  .backgroundColor('#F5F5F5')
+                  .borderRadius(8)
+                  .padding({ left: 15, right: 15 })
+                  .onChange((value: string) => {
+                    this.newPhone = value;
+                  })
+
+                Row({ space: 10 }) {
+                  TextInput({ text: this.phoneVerifyCode, placeholder: '请输入验证码' })
+                    .layoutWeight(1)
+                    .height(50)
+                    .fontSize(16)
+                    .type(InputType.Number)
+                    .backgroundColor('#F5F5F5')
+                    .borderRadius(8)
+                    .padding({ left: 15, right: 15 })
+                    .onChange((value: string) => {
+                      this.phoneVerifyCode = value;
+                    })
+
+                  Button(this.phoneBtnEnable ? '获取验证码' : `${this.phoneCountDown}s`)
+                    .width(120)
+                    .height(50)
+                    .fontSize(14)
+                    .backgroundColor(this.phoneBtnEnable ? '#FF5000' : '#CCCCCC')
+                    .borderRadius(8)
+                    .enabled(this.phoneBtnEnable)
+                    .onClick(() => {
+                      this.sendPhoneVerifyCode();
+                    })
+                }
+                .width('100%')
+
+                Button('确认修改手机号')
+                  .width('100%')
+                  .height(45)
+                  .fontSize(16)
+                  .backgroundColor('#FF5000')
+                  .borderRadius(8)
+                  .margin({ top: 10 })
+                  .onClick(() => {
+                    this.changePhone();
+                  })
+              }
+              .width('90%')
+              .padding({ left: 15, right: 15 })
+            }
           }
           .width('100%')
           .padding({ top: 15, bottom: 15 })
           .backgroundColor('#FFFFFF')
 
-          // 密码修改
           Column({ space: 10 }) {
             Row() {
               Text('密码')
@@ -289,7 +512,6 @@ struct EditProfilePage {
           .padding({ top: 15, bottom: 15 })
           .backgroundColor('#FFFFFF')
 
-          // 收货地址
           Column({ space: 10 }) {
             Text('收货地址')
               .fontSize(16)

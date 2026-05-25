@@ -1,36 +1,82 @@
 // index.ets
 import router from '@ohos.router';
+import promptAction from '@ohos.promptAction';
 import { GlobalStore } from '../model/Models';
 
 @Entry
 @Component
 struct ProfilePage {
   @State displayAccount: string = ''
+  @State currentAvatar: string = ''
+  @State isCustomAvatar: boolean = false
 
   aboutToAppear() {
     this.displayAccount = GlobalStore.getDisplayPhone();
+    this.updateAvatar();
+  }
+
+  updateAvatar() {
+    if (GlobalStore.currentUser !== null) {
+      let avatarName = GlobalStore.currentUser.avatar;
+      if (avatarName.length > 0) {
+        if (avatarName.startsWith('custom_')) {
+          this.currentAvatar = avatarName;
+          this.isCustomAvatar = true;
+        } else {
+          this.currentAvatar = avatarName;
+          this.isCustomAvatar = false;
+        }
+      }
+    }
+  }
+
+  onPageShow() {
+    this.displayAccount = GlobalStore.getDisplayPhone();
+    this.updateAvatar();
+  }
+
+  navigateToEdit() {
+    console.log('点击了修改个人信息，准备跳转到 edit');
+    try {
+      router.pushUrl({
+        url: 'pages/edit'
+      }).then(() => {
+        console.log('跳转到edit页面成功');
+      }).catch((err: Error) => {
+        console.error('跳转失败:', err);
+        promptAction.showToast({ message: '页面跳转失败: ' + err.message });
+      });
+    } catch (error) {
+      console.error('跳转异常:', error);
+      promptAction.showToast({ message: '页面跳转异常' });
+    }
   }
 
   build() {
     Column() {
-      // 标题
       Text('我的')
         .fontSize(30)
         .fontWeight(FontWeight.Bold)
         .width('100%')
         .padding({ top: 20, bottom: 20, left: 20 })
 
-      // 用户信息区域
       Row() {
-        // 头像
-        Image($r('app.media.date'))
-          .width(80)
-          .height(80)
-          .borderRadius(40)
-          .objectFit(ImageFit.Cover)
-          .margin({ right: 20 })
+        if (this.isCustomAvatar) {
+          Image(`file://${getContext(this).filesDir}/${this.currentAvatar}`)
+            .width(80)
+            .height(80)
+            .borderRadius(40)
+            .objectFit(ImageFit.Cover)
+            .margin({ right: 20 })
+        } else {
+          Image($r('app.media.user_77926'))
+            .width(80)
+            .height(80)
+            .borderRadius(40)
+            .objectFit(ImageFit.Cover)
+            .margin({ right: 20 })
+        }
 
-        // 用户名和邮箱
         Column() {
           Text(GlobalStore.getDisplayName())
             .fontSize(28)
@@ -46,14 +92,13 @@ struct ProfilePage {
       .padding({ left: 30, right: 30, bottom: 30 })
       .alignItems(VerticalAlign.Center)
 
-      // 设置列表项
       List() {
         ListItem() {
           this.ListItemBuilder($r('app.media.notice'), '推送通知', Color.Green)
         }
 
         ListItem() {
-          this.ListItemBuilder($r('app.media.date'), '数据管理', Color.Blue)
+          this.ListItemBuilder($r('app.media.date'), '修改个人信息', Color.Blue)
         }
         ListItem() {
           this.ListItemBuilder($r('app.media.information_77957'), '已购商品', '#800080')
@@ -93,7 +138,6 @@ struct ProfilePage {
       .width('100%')
       .layoutWeight(1)
 
-      // 退出登录按钮
       Button('退出登录')
         .width('90%')
         .height(50)
@@ -112,23 +156,19 @@ struct ProfilePage {
     .alignItems(HorizontalAlign.Start)
   }
 
-  // 通用列表项构建器
   @Builder
   ListItemBuilder(iconRes: Resource, title: string, iconColor: ResourceColor) {
     Row() {
-      // 图标
       Image(iconRes)
         .width(30)
         .height(30)
         .fillColor(iconColor)
         .margin({ right: 20 })
 
-      // 标题
       Text(title)
         .fontSize(20)
         .layoutWeight(1)
 
-      // 箭头
       Text('>')
         .fontSize(24)
         .fontColor(Color.Gray)
@@ -138,10 +178,11 @@ struct ProfilePage {
     .padding({ left: 30, right: 30, top: 15, bottom: 15 })
     .alignItems(VerticalAlign.Center)
     .onClick(() => {
-      if (title === '数据管理') {
-        router.pushUrl({ url: 'pages/edit' });
+      console.log('点击了:', title);
+      if (title === '修改个人信息') {
+        this.navigateToEdit();
       } else if (title === '推送通知') {
-        console.log('推送通知设置');
+        router.pushUrl({ url: '/pages/notice' });
       } else if (title === '菜单设置') {
         console.log('菜单设置');
       } else if (title === '关于') {

@@ -1006,6 +1006,10 @@ export class GlobalStore {
     if (name.length === 0) {
       return '';
     }
+    // 如果是自定义头像，返回特殊标识
+    if (name.startsWith('custom_')) {
+      return name;
+    }
     if (name.indexOf('avatars/') === 0) {
       return name;
     }
