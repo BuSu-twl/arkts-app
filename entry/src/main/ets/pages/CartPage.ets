@@ -265,7 +265,7 @@ struct CartPage {
           router.pushUrl({ url: 'pages/ProductDetail', params: { product: item } as RouteParams });
         })
 
-      // 3. 核心改变：中间的 Column 只放文本和价格，不再放加减框！
+      // 3. 核心改变：中间的 Column 只放文本和价格，不再放加减框
       Column() {
         if (this.isPurchased(item)) {
           Text('已购买过')
@@ -291,7 +291,7 @@ struct CartPage {
             router.pushUrl({ url: 'pages/ProductDetail', params: { product: item } as RouteParams });
           })
 
-        Blank() // 把价格死死压在左下角
+        Blank()
 
         Text(`￥${item.price}`)
           .fontColor(this.isPurchased(item) ? AppTheme.TEXT_LIGHT : AppTheme.PRIMARY)
@@ -302,9 +302,9 @@ struct CartPage {
       .margin({ left: 12, right: 10 })
       .alignItems(HorizontalAlign.Start)
 
-      // 4. 右侧专属控制区：把【数量加减框】和【删除按钮】垂直排布，死死钉在最右边！
+      // 4. 右侧控制区
       Column() {
-        // 数量加减框：独立出来后，它的宽度和位置绝对固定，再也不会受价格影响了！
+        // 数量加减框位置不随着价格移动
         Row() {
           Text('-')
             .width(26)
@@ -345,7 +345,7 @@ struct CartPage {
         .border({ width: 1, color: this.isPurchased(item) ? AppTheme.BORDER_INPUT : AppTheme.BG_SIDEBAR })
         .borderRadius(4)
 
-        Blank() // 让加减框和删除按钮之间有优雅的间距
+        Blank()
 
         // 删除文本/按钮
         Text('删除')
