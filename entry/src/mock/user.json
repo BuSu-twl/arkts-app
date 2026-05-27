@@ -7,7 +7,7 @@
       "memberName": "zhangsan",
       "password": "123456",
       "nickname": "张三",
-      "avatar": "1.png",
+      "avatar": "img.png",
       "smsCode": "888888",
       "claimedCouponIds": ["c100", "c50"],
       "cartItems": [
@@ -55,7 +55,7 @@
       "memberName": "lisi",
       "password": "abc123",
       "nickname": "李四",
-      "avatar": "2.png",
+      "avatar": "img.png",
       "smsCode": "666666",
       "claimedCouponIds": [],
       "cartItems": [
@@ -87,7 +87,7 @@
       "memberName": "wangwu",
       "password": "456789",
       "nickname": "王五",
-      "avatar": "3.png",
+      "avatar": "img.png",
       "smsCode": "123456",
       "claimedCouponIds": ["c300", "c100"],
       "cartItems": [
@@ -149,7 +149,7 @@
       "memberName": "zhaoliu",
       "password": "789012",
       "nickname": "赵六",
-      "avatar": "4.png",
+      "avatar": "img.png",
       "smsCode": "999999",
       "claimedCouponIds": ["c500"],
       "cartItems": [
@@ -182,7 +182,7 @@
       "memberName": "sunqi",
       "password": "321654",
       "nickname": "孙七",
-      "avatar": "5.png",
+      "avatar": "img.png",
       "smsCode": "777777",
       "claimedCouponIds": ["c1000", "c500", "c100"],
       "cartItems": [],
@@ -227,7 +227,7 @@
       "memberName": "zhouba",
       "password": "654321",
       "nickname": "周八",
-      "avatar": "6.png",
+      "avatar": "img.png",
       "smsCode": "555555",
       "claimedCouponIds": ["c50"],
       "cartItems": [
