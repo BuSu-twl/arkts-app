@@ -45,7 +45,7 @@ export struct BottomNavBar {
       .alignItems(HorizontalAlign.Center)
       .onClick(() => {
         if (this.currentIndex !== 2) {
-          router.replaceUrl({ url: 'pages/ProfilePage' });
+          router.replaceUrl({ url: 'pages/MySetting' });
         }
       })
     }

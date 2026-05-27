@@ -12,7 +12,7 @@ struct FavoritePage {
 
   aboutToAppear() {
     this.refresh();
-    this.recommends = GlobalStore.getRandomRecommend(6);
+    this.recommends = GlobalStore.getPersonalizedRecommend(6);
   }
 
   onPageShow() {

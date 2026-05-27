@@ -2,6 +2,7 @@ import router from '@ohos.router';
 import promptAction from '@ohos.promptAction';
 import { PayItem, Coupon, GlobalStore, PayRouteParams, PayResultParams } from '../model/Models';
 import { AppTheme } from '../common/AppTheme';
+import { ensureAppData } from '../common/AppInit';
 
 @Entry
 @Component
@@ -15,14 +16,29 @@ struct PayPage {
   @State usableCoupons: Coupon[] = [];
   @State payMethod: string = 'wechat';
   @State paying: boolean = false;
+  @State userBalance: number = 0;
 
   aboutToAppear() {
+    ensureAppData();
     const params = router.getParams() as PayRouteParams;
     if (params && params.items && params.items.length > 0) {
       this.payItems = GlobalStore.copyPayItems(params.items);
       this.fromCart = params.fromCart;
+    } else {
+      promptAction.showToast({ message: '订单信息无效' });
+      router.back();
+      return;
     }
+    this.refreshBalance();
     this.recalcAmount();
+  }
+
+  onPageShow() {
+    this.refreshBalance();
+  }
+
+  refreshBalance() {
+    this.userBalance = GlobalStore.getUserBalance();
   }
 
   recalcAmount() {
@@ -36,7 +52,8 @@ struct PayPage {
       this.selectedCouponId = GlobalStore.getBestCouponId(this.subtotal);
     }
     this.discount = GlobalStore.calcCouponDiscount(this.subtotal, this.selectedCouponId);
-    this.payAmount = this.subtotal - this.discount;
+    this.payAmount = GlobalStore.normalizeMoney(this.subtotal - this.discount);
+    this.refreshBalance();
   }
 
   selectCoupon(couponId: string) {
@@ -65,12 +82,23 @@ struct PayPage {
     if (this.paying) {
       return;
     }
+    if (this.payMethod === 'balance') {
+      this.refreshBalance();
+      if (this.userBalance < this.payAmount) {
+        promptAction.showToast({ message: '余额不足，请选择其他支付方式' });
+        return;
+      }
+    }
     this.paying = true;
     setTimeout(() => {
       let order = GlobalStore.createOrder(this.payItems, this.selectedCouponId, this.payMethod);
       if (order === null) {
         this.paying = false;
-        promptAction.showToast({ message: '请先登录后再支付' });
+        if (this.payMethod === 'balance') {
+          promptAction.showToast({ message: '余额不足，支付未完成' });
+        } else {
+          promptAction.showToast({ message: '支付失败，请重试' });
+        }
         return;
       }
       if (this.fromCart) {
@@ -186,7 +214,7 @@ struct PayPage {
               .width('100%')
             this.payMethodRow('wechat', '微信支付')
             this.payMethodRow('alipay', '支付宝')
-            this.payMethodRow('balance', '余额支付')
+            this.payBalanceRow()
           }
           .width('92%')
           .padding(14)
@@ -243,7 +271,8 @@ struct PayPage {
           .fontSize(16)
           .fontWeight(FontWeight.Bold)
           .backgroundColor(this.paying ? AppTheme.BTN_DISABLED : AppTheme.PRIMARY)
-          .enabled(!this.paying && this.payItems.length > 0)
+          .enabled(!this.paying && this.payItems.length > 0 &&
+            !(this.payMethod === 'balance' && this.userBalance < this.payAmount))
           .onClick(() => {
             this.doPay();
           })
@@ -255,6 +284,37 @@ struct PayPage {
     .width('100%')
     .height('100%')
     .backgroundColor(AppTheme.BG_PAGE)
+  }
+
+  @Builder
+  payBalanceRow() {
+    Column({ space: 4 }) {
+      Row() {
+        Text('余额支付')
+          .fontSize(15)
+        Blank()
+        Text(this.payMethod === 'balance' ? '●' : '○')
+          .fontSize(16)
+          .fontColor(this.payMethod === 'balance' ? AppTheme.PRIMARY : AppTheme.BTN_DISABLED)
+      }
+      .width('100%')
+      Row() {
+        Text(`当前余额 ￥${this.userBalance.toFixed(2)}`)
+          .fontSize(12)
+          .fontColor(AppTheme.TEXT_HINT)
+        if (this.payMethod === 'balance' && this.userBalance < this.payAmount) {
+          Text('（不足）')
+            .fontSize(12)
+            .fontColor(AppTheme.PRIMARY)
+        }
+      }
+      .width('100%')
+    }
+    .width('100%')
+    .padding({ top: 4, bottom: 4 })
+    .onClick(() => {
+      this.payMethod = 'balance';
+    })
   }
 
   @Builder

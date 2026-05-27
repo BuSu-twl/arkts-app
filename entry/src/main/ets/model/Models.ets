@@ -395,6 +395,8 @@ export interface User {
   cartItems: UserCartItem[];
   favoriteIds: number[];
   browseHistory?: number[];
+  /** 账户余额（元），内存 mock */
+  balance?: number;
   orders: Order[];
   registerTime: string;
 }
@@ -460,9 +462,14 @@ export class GlobalStore {
       cartItems: GlobalStore.copyCartItems(u.cartItems ?? []),
       favoriteIds: GlobalStore.copyFavoriteIds(u.favoriteIds ?? []),
       browseHistory: GlobalStore.copyProductIds(u.browseHistory ?? []),
+      balance: GlobalStore.normalizeMoney(u.balance ?? 1000),
       orders: GlobalStore.copyOrders(u.orders ?? []),
       registerTime: u.registerTime
     };
+  }
+
+  static normalizeMoney(n: number): number {
+    return Math.round(n * 100) / 100;
   }
 
   static copyProductIds(ids: number[]): number[] {
@@ -959,6 +966,7 @@ export class GlobalStore {
       cartItems: [],
       favoriteIds: [],
       browseHistory: [],
+      balance: 200,
       orders: [],
       registerTime: GlobalStore.formatNow().substring(0, 10)
     };
@@ -997,7 +1005,34 @@ export class GlobalStore {
     return GlobalStore.currentUser.phone;
   }
 
-  /** 头像路径，对应 rawfile/avatars/ 下文件，如 avatars/1.png */
+  static getUserBalance(): number {
+    if (GlobalStore.currentUser === null) {
+      return 0;
+    }
+    return GlobalStore.normalizeMoney(GlobalStore.currentUser.balance ?? 0);
+  }
+
+  static syncBalanceToCurrentUser(): void {
+    if (GlobalStore.currentUser === null) {
+      return;
+    }
+    let b = GlobalStore.normalizeMoney(GlobalStore.currentUser.balance ?? 0);
+    GlobalStore.currentUser.balance = b;
+    let source = GlobalStore.findUserById(GlobalStore.currentUser.id);
+    if (source !== null) {
+      source.balance = b;
+    }
+  }
+
+  /** 预设头像 rawfile 文件名，如 1.png */
+  static getPresetAvatarFile(index: number): string {
+    if (index >= 1 && index <= 30) {
+      return `${index}.png`;
+    }
+    return '1.png';
+  }
+
+  /** 头像 rawfile 路径；custom_ 开头为本地文件名片段 */
   static getAvatarRawPath(): string {
     if (GlobalStore.currentUser === null) {
       return '';
@@ -1006,14 +1041,18 @@ export class GlobalStore {
     if (name.length === 0) {
       return '';
     }
-    // 如果是自定义头像，返回特殊标识
     if (name.startsWith('custom_')) {
       return name;
     }
-    if (name.indexOf('avatars/') === 0) {
-      return name;
+    if (name.indexOf('/') >= 0) {
+      let parts = name.split('/');
+      return parts[parts.length - 1];
     }
-    return `avatars/${name}`;
+    return name;
+  }
+
+  static isCustomAvatarName(name: string): boolean {
+    return name.startsWith('custom_');
   }
 
   static hasAvatar(): boolean {
@@ -1100,12 +1139,16 @@ export class GlobalStore {
   }
 
   static toPayItem(p: Product, count?: number): PayItem {
+    let image = '1.png';
+    if (p.images !== undefined && p.images.length > 0 && p.images[0].length > 0) {
+      image = p.images[0];
+    }
     return {
       productId: p.id,
       name: p.name,
       price: p.price,
       count: count ?? p.count ?? 1,
-      image: p.images[0]
+      image: image
     };
   }
 
@@ -1198,19 +1241,31 @@ export class GlobalStore {
     let copiedItems = GlobalStore.copyPayItems(items);
     let subtotal = GlobalStore.calcItemsTotal(copiedItems);
     let discount = GlobalStore.calcCouponDiscount(subtotal, couponId);
+    let payAmount = GlobalStore.normalizeMoney(subtotal - discount);
+    if (payMethod === 'balance') {
+      let bal = GlobalStore.getUserBalance();
+      if (bal < payAmount) {
+        return null;
+      }
+    }
     let order: Order = {
       orderId: `ORD${Date.now()}`,
       userId: GlobalStore.currentUser.id,
       items: copiedItems,
       totalAmount: subtotal,
       discount: discount,
-      payAmount: subtotal - discount,
+      payAmount: payAmount,
       couponId: couponId,
       payMethod: payMethod,
       status: 'paid',
       createTime: GlobalStore.formatNow()
     };
     GlobalStore.orderList.push(order);
+    if (payMethod === 'balance') {
+      let bal = GlobalStore.getUserBalance();
+      GlobalStore.currentUser.balance = GlobalStore.normalizeMoney(bal - payAmount);
+      GlobalStore.syncBalanceToCurrentUser();
+    }
     GlobalStore.syncOrdersToCurrentUser();
     return order;
   }

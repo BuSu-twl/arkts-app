@@ -6,13 +6,15 @@
     "pages/Register",
     "pages/HomePage",
     "pages/RankPage",
-    "pages/ProfilePage",
+    "pages/MySetting",
     "pages/ProductDetail",
     "pages/FavoritePage",
     "pages/CartPage",
     "pages/PayPage",
     "pages/PayResultPage",
     "pages/OrderListPage",
-    "pages/edit"
+    "pages/edit",
+    "pages/notice",
+    "pages/private"
   ]
 }

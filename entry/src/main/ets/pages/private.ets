@@ -10,7 +10,7 @@ struct PrivacyPolicyPage {
           .fontSize(16)
           .fontColor('#FF5000')
           .onClick(() => {
-            router.pushUrl({ url: '/pages/MySetting' });
+            router.back();
           })
 
         Text('隐私协议')

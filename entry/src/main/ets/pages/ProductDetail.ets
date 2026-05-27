@@ -24,11 +24,18 @@ struct ProductDetail {
     Column() {
       // 1. 顶部大图区 (保持不变)
       Stack({ alignContent: Alignment.TopStart }) {
-        Image($rawfile(this.item.images[0]))
-          .width('100%')
-          .height(350)
-          .objectFit(ImageFit.Contain)
-          .backgroundColor(AppTheme.BG_SECTION)
+        if (this.item.images.length > 0) {
+          Image($rawfile(this.item.images[0]))
+            .width('100%')
+            .height(350)
+            .objectFit(ImageFit.Contain)
+            .backgroundColor(AppTheme.BG_SECTION)
+        } else {
+          Column()
+            .width('100%')
+            .height(350)
+            .backgroundColor(AppTheme.BG_SECTION)
+        }
 
         // 返回按钮
         Circle({ width: 40, height: 40 }).fill(AppTheme.OVERLAY_BACK).margin(15).onClick(() => router.back())

@@ -8,3 +8,10 @@ export function initAppData(): void {
   const users = (userData as Record<string, Object>)['data'] as User[];
   GlobalStore.initUsers(users);
 }
+
+/** Preview 或未走 EntryAbility 时保证数据已加载 */
+export function ensureAppData(): void {
+  if (GlobalStore.allProducts.length === 0 || !GlobalStore.usersLoaded) {
+    initAppData();
+  }
+}

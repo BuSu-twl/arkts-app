@@ -4,6 +4,7 @@ import productData from '../../../mock/product.json';
 import { Product, Coupon, GlobalStore, RouteParams, ProductUtils } from '../model/Models';
 import { BottomNavBar } from '../components/BottomNavBar';
 import { AppTheme } from '../common/AppTheme';
+import { ensureAppData } from '../common/AppInit';
 
 @Entry
 @Component
@@ -17,6 +18,10 @@ struct HomePage {
   @State claimedIds: string[] = [];
 
   aboutToAppear() {
+    ensureAppData();
+    if (GlobalStore.allProducts.length > 0) {
+      this.products = GlobalStore.allProducts;
+    }
     GlobalStore.allProducts = this.products;
     this.hotCarousel = ProductUtils.getTopHotProducts(this.products, 5);
     this.categoryRecommends = ProductUtils.getCategoryTopProducts(this.products);

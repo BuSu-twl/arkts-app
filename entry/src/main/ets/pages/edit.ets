@@ -1,9 +1,10 @@
 import router from '@ohos.router';
 import promptAction from '@ohos.promptAction';
 import { GlobalStore } from '../model/Models';
+import { AppTheme } from '../common/AppTheme';
+import { ensureAppData } from '../common/AppInit';
 import picker from '@ohos.file.picker';
 import fs from '@ohos.file.fs';
-import util from '@ohos.util';
 
 @Entry
 @Component
@@ -24,6 +25,12 @@ struct EditProfilePage {
   @State phoneBtnEnable: boolean = true
 
   aboutToAppear() {
+    ensureAppData();
+    if (!GlobalStore.isLoggedIn()) {
+      promptAction.showToast({ message: '请先登录' });
+      router.replaceUrl({ url: 'pages/Login' });
+      return;
+    }
     if (GlobalStore.currentUser !== null) {
       this.nickname = GlobalStore.currentUser.nickname;
       this.phone = GlobalStore.currentUser.phone;
@@ -279,11 +286,7 @@ struct EditProfilePage {
                   .borderRadius(40)
                   .objectFit(ImageFit.Cover)
               } else {
-                Image($r(`app.media.${this.avatarIndex}`))
-                  .width(80)
-                  .height(80)
-                  .borderRadius(40)
-                  .objectFit(ImageFit.Cover)
+                this.PresetAvatarImage(this.avatarIndex > 0 ? this.avatarIndex : 1, 80)
               }
             }
             .width('100%')
@@ -309,17 +312,17 @@ struct EditProfilePage {
 
             Row({ space: 15 }) {
               ForEach([1, 2, 3, 4, 5, 6], (index: number) => {
-                Image($r(`app.media.${index}`))
-                  .width(60)
-                  .height(60)
-                  .borderRadius(30)
-                  .border({
-                    width: (this.avatarIndex === index && this.customAvatarPath.length === 0) ? 3 : 0,
-                    color: '#FF5000'
-                  })
-                  .onClick(() => {
-                    this.selectAvatar(index);
-                  })
+                Column() {
+                  this.PresetAvatarImage(index, 60)
+                }
+                .border({
+                  width: (this.avatarIndex === index && this.customAvatarPath.length === 0) ? 3 : 0,
+                  color: AppTheme.PRIMARY
+                })
+                .borderRadius(30)
+                .onClick(() => {
+                  this.selectAvatar(index);
+                })
               }, (index: number) => index.toString())
             }
             .width('100%')
@@ -553,5 +556,22 @@ struct EditProfilePage {
     .width('100%')
     .height('100%')
     .backgroundColor('#F5F5F5')
+  }
+
+  @Builder
+  PresetAvatarImage(index: number, size: number) {
+    if (index === 1) {
+      Image($rawfile('1.png')).width(size).height(size).borderRadius(size / 2).objectFit(ImageFit.Cover)
+    } else if (index === 2) {
+      Image($rawfile('2.png')).width(size).height(size).borderRadius(size / 2).objectFit(ImageFit.Cover)
+    } else if (index === 3) {
+      Image($rawfile('3.png')).width(size).height(size).borderRadius(size / 2).objectFit(ImageFit.Cover)
+    } else if (index === 4) {
+      Image($rawfile('4.png')).width(size).height(size).borderRadius(size / 2).objectFit(ImageFit.Cover)
+    } else if (index === 5) {
+      Image($rawfile('5.png')).width(size).height(size).borderRadius(size / 2).objectFit(ImageFit.Cover)
+    } else {
+      Image($rawfile('6.png')).width(size).height(size).borderRadius(size / 2).objectFit(ImageFit.Cover)
+    }
   }
 }

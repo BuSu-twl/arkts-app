@@ -3,6 +3,7 @@ import productData from '../../../mock/product.json';
 import { Product, GlobalStore, RouteParams, ProductUtils } from '../model/Models';
 import { BottomNavBar } from '../components/BottomNavBar';
 import { AppTheme } from '../common/AppTheme';
+import { ensureAppData } from '../common/AppInit';
 
 @Entry
 @Component
@@ -14,6 +15,10 @@ struct RankPage {
   @State selectedCategory: string = '';
 
   aboutToAppear() {
+    ensureAppData();
+    if (GlobalStore.allProducts.length > 0) {
+      this.products = GlobalStore.allProducts;
+    }
     GlobalStore.allProducts = this.products;
     this.categories = ProductUtils.getAllCategories(this.products);
     if (this.categories.length > 0) {
