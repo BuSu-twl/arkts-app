@@ -12,7 +12,6 @@ struct CartPage {
   @State cartList: Product[] = [];
   @State total: number = 0;
   @State recommends: Product[] = [];
-
   // 存储选中的商品ID
   @State selectedItems: Set<number> = new Set();
   @State isAllSelected: boolean = false;
@@ -184,9 +183,15 @@ struct CartPage {
                 GridItem() {
                   Column() {
                     Image($rawfile(item.images[0])).width('100%').height(100).objectFit(ImageFit.Cover)
-                      .onClick(() => router.pushUrl({ url: 'pages/ProductDetail', params: { product: item } as RouteParams }))
+                      .onClick(() => router.pushUrl({
+                        url: 'pages/ProductDetail',
+                        params: { product: item } as RouteParams
+                      }))
                     Text(item.name).fontSize(11).maxLines(1).margin(5)
-                      .onClick(() => router.pushUrl({ url: 'pages/ProductDetail', params: { product: item } as RouteParams }))
+                      .onClick(() => router.pushUrl({
+                        url: 'pages/ProductDetail',
+                        params: { product: item } as RouteParams
+                      }))
                     Button("加购").fontSize(10).height(20).backgroundColor(AppTheme.PRIMARY)
                       .onClick(() => {
                         GlobalStore.addToCart(item);
@@ -206,20 +211,32 @@ struct CartPage {
       // 3. 底部结算固定栏
       Row() {
         Row() {
-          Image(this.isAllSelected ? $r('app.media.Select') : $r('app.media.unselect')).width(20).height(20).margin({ right: 4 })
+          Image(this.isAllSelected ? $r('app.media.Select') : $r('app.media.unselect'))
+            .width(20)
+            .height(20)
+            .margin({ right: 4 })
           Text("全选").fontSize(14).fontColor(AppTheme.TEXT_PRIMARY)
         }
         .onClick(() => this.toggleSelectAll())
         .margin({ right: 16 })
 
-        Text(`合计: ￥${this.total.toFixed(2)}`).fontColor(AppTheme.PRIMARY).fontSize(20).fontWeight(FontWeight.Bold).layoutWeight(1)
+        Text(`合计: ￥${this.total.toFixed(2)}`)
+          .fontColor(AppTheme.PRIMARY)
+          .fontSize(20)
+          .fontWeight(FontWeight.Bold)
+          .layoutWeight(1)
 
         Button("立即结算")
           .backgroundColor(this.total > 0 ? AppTheme.PRIMARY : AppTheme.BTN_DISABLED)
           .enabled(this.total > 0)
-          .onClick(() => { if (this.total > 0) this.goCheckout(); })
+          .onClick(() => {
+            if (this.total > 0) this.goCheckout();
+          })
       }
-      .width('100%').padding(20).backgroundColor(AppTheme.WHITE).shadow({ radius: 5, color: AppTheme.SHADOW, offsetY: -3 })
+      .width('100%')
+      .padding(20)
+      .backgroundColor(AppTheme.WHITE)
+      .shadow({ radius: 5, color: AppTheme.SHADOW, offsetY: -3 })
     }
     .backgroundColor(AppTheme.BG_PAGE).height('100%')
   }
@@ -228,84 +245,128 @@ struct CartPage {
   @Builder
   CartItemRow(item: Product, index: number) {
     Row() {
-      // 勾选单选框
+      // 1. 最左侧：单选勾选框
       Column() {
-        Image(this.selectedItems.has(item.id) ? $r('app.media.Select') : $r('app.media.unselect')).width(22).height(22)
-          .onClick((e) => { this.toggleSelect(item); })
+        Image(this.selectedItems.has(item.id) ? $r('app.media.Select') : $r('app.media.unselect'))
+          .width(22).height(22)
+          .onClick(() => {
+            this.toggleSelect(item);
+          })
       }.padding({ right: 8 }).justifyContent(FlexAlign.Center)
 
-      // 商品图片：已为您加上点击跳转详情页功能！
-      Image($rawfile(item.images[0])).width(85).height(85).borderRadius(10)
+      // 2. 左二：商品图片
+      Image($rawfile(item.images[0]))
+        .width(85)
+        .height(85)
+        .borderRadius(10)
         .backgroundColor(this.isPurchased(item) ? AppTheme.BG_DISABLED : AppTheme.BG_SECTION)
         .opacity(this.isPurchased(item) ? 0.6 : 1)
         .onClick(() => {
           router.pushUrl({ url: 'pages/ProductDetail', params: { product: item } as RouteParams });
         })
 
-      // 中间信息区
+      // 3. 核心改变：中间的 Column 只放文本和价格，不再放加减框！
       Column() {
         if (this.isPurchased(item)) {
-          Text('已购买过').fontSize(11).fontColor(AppTheme.TEXT_HINT).backgroundColor(AppTheme.BG_DISABLED).padding({ left: 6, right: 6, top: 2, bottom: 2 }).borderRadius(4).margin({ bottom: 4 })
+          Text('已购买过')
+            .fontSize(11)
+            .fontColor(AppTheme.TEXT_HINT)
+            .backgroundColor(AppTheme.BG_DISABLED)
+            .padding({
+              left: 6,
+              right: 6,
+              top: 2,
+              bottom: 2
+            })
+            .borderRadius(4)
+            .margin({ bottom: 4 })
         }
 
-        // 商品名称：已为您加上点击跳转详情页功能！
-        Text(item.name).fontSize(15).fontWeight(FontWeight.Medium).fontColor(this.isPurchased(item) ? AppTheme.TEXT_HINT : AppTheme.TEXT_PRIMARY).maxLines(2)
+        Text(item.name)
+          .fontSize(15)
+          .fontWeight(FontWeight.Medium)
+          .fontColor(this.isPurchased(item) ? AppTheme.TEXT_HINT : AppTheme.TEXT_PRIMARY)
+          .maxLines(2)
           .onClick(() => {
             router.pushUrl({ url: 'pages/ProductDetail', params: { product: item } as RouteParams });
           })
 
-        Blank()
+        Blank() // 把价格死死压在左下角
 
+        Text(`￥${item.price}`)
+          .fontColor(this.isPurchased(item) ? AppTheme.TEXT_LIGHT : AppTheme.PRIMARY)
+          .fontSize(18).fontWeight(FontWeight.Bold)
+      }
+      .layoutWeight(1)
+      .height(85)
+      .margin({ left: 12, right: 10 })
+      .alignItems(HorizontalAlign.Start)
+
+      // 4. 右侧专属控制区：把【数量加减框】和【删除按钮】垂直排布，死死钉在最右边！
+      Column() {
+        // 数量加减框：独立出来后，它的宽度和位置绝对固定，再也不会受价格影响了！
         Row() {
-          Text(`￥${item.price}`).fontColor(this.isPurchased(item) ? AppTheme.TEXT_LIGHT : AppTheme.PRIMARY).fontSize(18).fontWeight(FontWeight.Bold)
-          Blank()
-
-          // 核心加减器：直接控制局部状态机，阻断一切外界干扰！
-          Row() {
-            Text('-').width(28).height(28).textAlign(TextAlign.Center).fontColor(this.isPurchased(item) ? AppTheme.TEXT_HINT : AppTheme.TEXT_PRIMARY)
-              .onClick((e) => {
-                if (item.count! > 1) {
-                  // 1. 改变局部实体的数量值
-                  item.count!--;
-                  // 2. 同步通知她的全局数据库
-                  GlobalStore.updateCartCount(item.id, item.count!);
-                  // 3. 【极度关键】把修改后的对象重新回塞给数组，并用解构语法彻底刷新引用指针！
-                  this.cartList[index] = item;
-                  this.cartList = [...this.cartList];
-                  // 4. 重新计算最新价格
-                  this.calcTotal();
-                }
-              })
-
-            Text(`${item.count}`).width(35).height(28).textAlign(TextAlign.Center).fontSize(13)
-              .fontColor(this.isPurchased(item) ? AppTheme.TEXT_HINT : AppTheme.TEXT_PRIMARY)
-              .backgroundColor(this.isPurchased(item) ? AppTheme.BG_DISABLED : AppTheme.BG_PAGE)
-
-            Text('+').width(28).height(28).textAlign(TextAlign.Center).fontColor(this.isPurchased(item) ? AppTheme.TEXT_HINT : AppTheme.TEXT_PRIMARY)
-              .onClick((e) => {
-                // 1. 改变局部实体的数量值
-                item.count!++;
-                // 2. 同步通知她的全局数据库
+          Text('-')
+            .width(26)
+            .height(26)
+            .textAlign(TextAlign.Center)
+            .fontColor(this.isPurchased(item) ? AppTheme.TEXT_HINT : AppTheme.TEXT_PRIMARY)
+            .onClick(() => {
+              if (item.count! > 1) {
+                item.count!--;
                 GlobalStore.updateCartCount(item.id, item.count!);
-                // 3. 【极度关键】深度刷新数组引用
                 this.cartList[index] = item;
                 this.cartList = [...this.cartList];
-                // 4. 重新计算最新价格
                 this.calcTotal();
-              })
-          }
-          .border({ width: 1, color: this.isPurchased(item) ? AppTheme.BORDER_INPUT : AppTheme.BG_SIDEBAR }).borderRadius(4)
-        }.width('100%')
-      }.layoutWeight(1).height(85).margin({ left: 12, right: 10 }).alignItems(HorizontalAlign.Start)
+              }
+            })
 
-      // 删除按钮
-      Column() {
-        Text('删除').fontSize(12).fontColor(AppTheme.WHITE)
-          .backgroundColor(this.isPurchased(item) ? AppTheme.BTN_DISABLED : AppTheme.PRIMARY).padding({ left: 8, right: 8, top: 4, bottom: 4 }).borderRadius(6)
-          .onClick((e) => {
+          Text(`${item.count}`)
+            .width(30)
+            .height(26)
+            .textAlign(TextAlign.Center)
+            .fontSize(13)
+            .fontColor(this.isPurchased(item) ? AppTheme.TEXT_HINT : AppTheme.TEXT_PRIMARY)
+            .backgroundColor(this.isPurchased(item) ? AppTheme.BG_DISABLED : AppTheme.BG_PAGE)
+
+          Text('+')
+            .width(26)
+            .height(26)
+            .textAlign(TextAlign.Center)
+            .fontColor(this.isPurchased(item) ? AppTheme.TEXT_HINT : AppTheme.TEXT_PRIMARY)
+            .onClick(() => {
+              item.count!++;
+              GlobalStore.updateCartCount(item.id, item.count!);
+              this.cartList[index] = item;
+              this.cartList = [...this.cartList];
+              this.calcTotal();
+            })
+        }
+        .border({ width: 1, color: this.isPurchased(item) ? AppTheme.BORDER_INPUT : AppTheme.BG_SIDEBAR })
+        .borderRadius(4)
+
+        Blank() // 让加减框和删除按钮之间有优雅的间距
+
+        // 删除文本/按钮
+        Text('删除')
+          .fontSize(12)
+          .fontColor(AppTheme.WHITE)
+          .backgroundColor(this.isPurchased(item) ? AppTheme.BTN_DISABLED : AppTheme.PRIMARY)
+          .padding({
+            left: 10,
+            right: 10,
+            top: 4,
+            bottom: 4
+          })
+          .borderRadius(6)
+          .onClick(() => {
             AlertDialog.show({
-              title: '提示', message: '确定要移除这件商品吗？',
-              primaryButton: { value: '取消', action: () => {} },
+              title: '提示',
+              message: '确定要移除这件商品吗？',
+              primaryButton: {
+                value: '取消', action: () => {
+                }
+              },
               secondaryButton: {
                 value: '删除', fontColor: AppTheme.PRIMARY,
                 action: () => {
@@ -315,8 +376,14 @@ struct CartPage {
               }
             })
           })
-      }.justifyContent(FlexAlign.Center)
+      }
+      .height(85)
+      .alignItems(HorizontalAlign.End) // 强制内部所有组件靠最右侧对齐
     }
-    .padding(12).backgroundColor(this.isPurchased(item) ? AppTheme.BG_SIDEBAR : AppTheme.WHITE).borderRadius(16).margin({ bottom: 12 }).shadow({ radius: 8, color: AppTheme.SHADOW_SOFT, offsetY: 4 })
+    .padding(12)
+    .backgroundColor(this.isPurchased(item) ? AppTheme.BG_SIDEBAR : AppTheme.WHITE)
+    .borderRadius(16)
+    .margin({ bottom: 12 })
+    .shadow({ radius: 8, color: AppTheme.SHADOW_SOFT, offsetY: 4 })
   }
 }
