@@ -1,7 +1,7 @@
 import router from '@ohos.router';
 import promptAction from '@ohos.promptAction';
 import { GlobalStore } from '../model/Models';
-import { initAppData } from '../common/AppInit';
+import { ensureAppData } from '../common/AppInit';
 import { navigateAfterLogin } from '../common/LoginNav';
 import { AppTheme } from '../common/AppTheme';
 
@@ -13,7 +13,7 @@ struct LoginPage {
   @State isPwdShow: boolean = false
 
   aboutToAppear() {
-    initAppData();
+    ensureAppData();
   }
 
   doLogin(): void {
@@ -29,65 +29,23 @@ struct LoginPage {
     }
   }
 
-  // 封装跳转方法
   async goPage(url: string) {
     try {
       await router.pushUrl({ url: url });
     } catch (err) {
-      console.error("跳转失败：", JSON.stringify(err));
+      console.error('跳转失败：', JSON.stringify(err));
     }
   }
 
   build() {
-    Column() {
-      this.StatusBar()
-      Column({ space: 40 }) {
-        this.LogoArea()
-        this.InputArea()
-        this.ButtonArea()
-        this.OtherLoginArea()
-      }
-      .width('100%')
-      .padding({ left: 30, right: 30, top: 40 })
+    Column({ space: 40 }) {
+      this.LogoArea()
+      this.InputArea()
+      this.ButtonArea()
     }
     .width('100%')
     .height('100%')
-    .backgroundColor(AppTheme.BG_PAGE)
-  }
-
-  @Builder StatusBar() {
-    Row() {
-      Row() {
-        Text('5G')
-          .fontSize(12)
-          .fontColor(AppTheme.TEXT_PRIMARY)
-          .margin({ right: 5 })
-        Image($r('app.media.ic_signal'))
-          .width(18)
-          .height(12)
-          .margin({ right: 5 })
-        Image($r('app.media.ic_wifi'))
-          .width(18)
-          .height(12)
-      }
-      .layoutWeight(1)
-      .justifyContent(FlexAlign.Start)
-
-      Text('20:30')
-        .fontSize(14)
-        .fontColor(AppTheme.TEXT_PRIMARY)
-
-      Row() {
-        Image($r('app.media.ic_battery'))
-          .width(25)
-          .height(12)
-      }
-      .layoutWeight(1)
-      .justifyContent(FlexAlign.End)
-    }
-    .width('100%')
-    .height(40)
-    .padding({ left: 15, right: 15 })
+    .padding({ left: 30, right: 30, top: 60 })
     .backgroundColor(AppTheme.BG_PAGE)
   }
 
@@ -150,13 +108,7 @@ struct LoginPage {
       .width('100%')
 
       Row() {
-        Text('短信验证码登录')
-          .fontSize(14)
-          .fontColor(AppTheme.PRIMARY)
-          .onClick(() => {
-            this.goPage('pages/SmsLogin')
-          })
-
+        Blank()
         Text('忘记密码')
           .fontSize(14)
           .fontColor(AppTheme.PRIMARY)
@@ -165,7 +117,6 @@ struct LoginPage {
           })
       }
       .width('100%')
-      .justifyContent(FlexAlign.SpaceBetween)
       .margin({ top: 5 })
     }
   }
@@ -191,42 +142,5 @@ struct LoginPage {
         })
     }
     .width('100%')
-  }
-
-  @Builder OtherLoginArea() {
-    Column({ space: 25 }) {
-      Row() {
-        Divider()
-          .layoutWeight(1)
-          .strokeWidth(1)
-          .color(AppTheme.BORDER)
-        Text('其他方式登录')
-          .fontSize(12)
-          .fontColor(AppTheme.TEXT_HINT)
-          .margin({ left: 15, right: 15 })
-        Divider()
-          .layoutWeight(1)
-          .strokeWidth(1)
-          .color(AppTheme.BORDER)
-      }
-      .width('100%')
-
-      Row({ space: 50 }) {
-        Image($r('app.media.ic_wechat'))
-          .width(45)
-          .height(45)
-          .borderRadius(22.5)
-        Image($r('app.media.ic_tictok'))
-          .width(45)
-          .height(45)
-          .borderRadius(22.5)
-        Image($r('app.media.ic_twitter'))
-          .width(45)
-          .height(45)
-          .borderRadius(22.5)
-      }
-    }
-    .width('100%')
-    .margin({ top: 20 })
   }
 }

@@ -1,5 +1,4 @@
 import router from '@ohos.router';
-import productData from '../../../mock/product.json';
 import { Product, GlobalStore, RouteParams, ProductUtils } from '../model/Models';
 import { BottomNavBar } from '../components/BottomNavBar';
 import { AppTheme } from '../common/AppTheme';
@@ -8,7 +7,7 @@ import { ensureAppData } from '../common/AppInit';
 @Entry
 @Component
 struct RankPage {
-  private products: Product[] = productData.data as Product[];
+  private products: Product[] = [];
   @State rankList: Product[] = [];
   @State rankMode: number = 0;
   @State categories: string[] = [];
@@ -16,10 +15,7 @@ struct RankPage {
 
   aboutToAppear() {
     ensureAppData();
-    if (GlobalStore.allProducts.length > 0) {
-      this.products = GlobalStore.allProducts;
-    }
-    GlobalStore.allProducts = this.products;
+    this.products = GlobalStore.allProducts;
     this.categories = ProductUtils.getAllCategories(this.products);
     if (this.categories.length > 0) {
       this.selectedCategory = this.categories[0];
@@ -176,7 +172,7 @@ struct RankPage {
         .fontColor(index < 3 ? AppTheme.PRIMARY : AppTheme.TEXT_HINT)
         .width(28)
         .textAlign(TextAlign.Center)
-      Image($rawfile(item.images[0]))
+      Image($rawfile(ProductUtils.getProductImageFile(item)))
         .width(72)
         .height(72)
         .borderRadius(8)

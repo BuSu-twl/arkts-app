@@ -23,13 +23,16 @@
 ### 支付页 `PayPage.ets`
 - 无商品参数时提示并返回
 - 余额展示、不足禁用与提示
+- **仅余额支付**；已移除微信/支付宝及模拟延迟
 
-### 其他
-- `ensureAppData()`：Preview 场景保证 mock 已加载
-- `private.ets` 返回改为 `router.back()`
-- `CartPage` 删除 170+ 行注释死代码；猜你喜欢改为个性化推荐
-- `HomePage` / `RankPage` 优先使用 `GlobalStore.allProducts`
-- `ProductDetail` 无图时不崩溃
+### 登录与账号（精简）
+- 已删除 `SmsLogin.ets`、第三方登录 UI、假短信验证码流程
+- 忘记密码：已注册手机号 + 新密码
+- 注册：页内图形验证码；`edit` 换绑手机校验占用，无假短信
+
+### 数据加载 `AppInit.ets`
+- `productsLoaded` / `usersLoaded` 防止重复加载 mock
+- `HomePage` / `RankPage` 统一从 `GlobalStore.allProducts` 读取
 
 ---
 
@@ -38,10 +41,10 @@
 | 项 | 说明 |
 |----|------|
 | `notice.ets` / `private.ets` 主题 | 仍含 `#FF5000`，可统一为 `AppTheme` |
-| `edit.ets` 主题色 | 大量 `#FF5000` 可批量替换 |
-| 地址 / 换绑手机 | `saveAddress` 未持久化；换手机未校验 `smsCode` |
+| `edit.ets` 主题色 | 部分硬编码色可批量替换 |
+| 地址 | `saveAddress` 未持久化 |
 | 数据持久化 | 重启丢失会话，可用 Preferences |
-| `main_pages.json` | 确认含 `pages/notice`、`pages/private` |
+| 消息通知 | `notice` 仍为本地静态列表，未接推送 |
 
 ---
 

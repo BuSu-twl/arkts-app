@@ -4,6 +4,7 @@ import { GlobalStore } from '../model/Models';
 import { BottomNavBar } from '../components/BottomNavBar';
 import { AppTheme } from '../common/AppTheme';
 import { ensureAppData } from '../common/AppInit';
+import { AvatarUtils } from '../common/AvatarUtils';
 
 /** 个人中心（底部 Tab） */
 @Entry
@@ -16,7 +17,7 @@ struct MySetting {
   @State currentAvatar: string = '';
   @State isCustomAvatar: boolean = false;
   @State showPresetAvatar: boolean = false;
-  @State presetAvatarFile: string = '1.png';
+  @State presetAvatarFile: string = AvatarUtils.DEFAULT_AVATAR_RAW;
 
   aboutToAppear() {
     ensureAppData();
@@ -43,14 +44,11 @@ struct MySetting {
     this.isCustomAvatar = false;
     this.currentAvatar = '';
     this.showPresetAvatar = false;
-    this.presetAvatarFile = '1.png';
+    this.presetAvatarFile = AvatarUtils.DEFAULT_AVATAR_RAW;
     if (GlobalStore.currentUser === null) {
       return;
     }
     let avatarName = GlobalStore.currentUser.avatar;
-    if (avatarName.length === 0) {
-      return;
-    }
     if (GlobalStore.isCustomAvatarName(avatarName)) {
       this.currentAvatar = avatarName;
       this.isCustomAvatar = true;
@@ -157,7 +155,7 @@ struct MySetting {
               this.ListItemBuilder($r('app.media.ic_shop_logo'), '购物车')
             }
             ListItem() {
-              this.ListItemBuilder($r('app.media.starIcon'), '收藏商品')
+              this.ListItemBuilder($r('app.media.favorite'), '收藏商品')
             }
             ListItem() {
               this.CouponListItemBuilder()
@@ -253,8 +251,12 @@ struct MySetting {
     .padding({ left: 20, right: 20, top: 14, bottom: 14 })
     .alignItems(VerticalAlign.Center)
     .onClick(() => {
-      promptAction.showToast({ message: '请前往首页领取优惠券' });
-      router.replaceUrl({ url: 'pages/HomePage' });
+      if (!GlobalStore.isLoggedIn()) {
+        promptAction.showToast({ message: '请先登录' });
+        this.goLogin();
+        return;
+      }
+      router.pushUrl({ url: 'pages/CouponPage' });
     })
   }
 }

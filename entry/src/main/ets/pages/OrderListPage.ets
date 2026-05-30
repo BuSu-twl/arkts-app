@@ -1,7 +1,8 @@
 import router from '@ohos.router';
 import promptAction from '@ohos.promptAction';
-import { Order, PayItem, GlobalStore } from '../model/Models';
+import { Order, PayItem, GlobalStore, ProductUtils } from '../model/Models';
 import { AppTheme } from '../common/AppTheme';
+import { ensureAppData } from '../common/AppInit';
 
 @Entry
 @Component
@@ -9,6 +10,7 @@ struct OrderListPage {
   @State orders: Order[] = [];
 
   aboutToAppear() {
+    ensureAppData();
     this.refreshOrders();
   }
 
@@ -25,13 +27,7 @@ struct OrderListPage {
   }
 
   getPayMethodLabel(method: string): string {
-    if (method === 'wechat') {
-      return '微信';
-    }
-    if (method === 'alipay') {
-      return '支付宝';
-    }
-    return '余额';
+    return GlobalStore.getPayMethodLabel(method);
   }
 
   build() {
@@ -100,7 +96,7 @@ struct OrderListPage {
 
                 ForEach(order.items, (item: PayItem) => {
                   Row({ space: 8 }) {
-                    Image($rawfile(item.image))
+                    Image($rawfile(ProductUtils.resolvePayItemImage(item)))
                       .width(48)
                       .height(48)
                       .borderRadius(6)

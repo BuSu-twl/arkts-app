@@ -1,4 +1,6 @@
 import router from '@ohos.router';
+import promptAction from '@ohos.promptAction';
+import { NoticePersistence } from '../common/NoticePersistence';
 
 interface NoticeItem {
   id: number;
@@ -9,10 +11,8 @@ interface NoticeItem {
   isRead: boolean;
 }
 
-@Entry
-@Component
-struct NoticePage {
-  @State notices: NoticeItem[] = [
+function createDefaultNotices(): NoticeItem[] {
+  return [
     {
       id: 1,
       title: '系统维护通知',
@@ -62,6 +62,33 @@ struct NoticePage {
       isRead: true
     }
   ];
+}
+
+@Entry
+@Component
+struct NoticePage {
+  @State notices: NoticeItem[] = [];
+
+  aboutToAppear() {
+    NoticePersistence.ensureInit(getContext(this));
+    this.reloadNotices();
+  }
+
+  onPageShow() {
+    NoticePersistence.ensureInit(getContext(this));
+    this.reloadNotices();
+  }
+
+  reloadNotices() {
+    let defaults = createDefaultNotices();
+    let next: NoticeItem[] = [];
+    for (let i = 0; i < defaults.length; i++) {
+      let item = defaults[i];
+      let read = NoticePersistence.isRead(item.id, item.isRead);
+      next.push(this.copyNotice(item, read));
+    }
+    this.notices = next;
+  }
 
   getNoticeTypeColor(type: string): string {
     switch (type) {
@@ -89,11 +116,52 @@ struct NoticePage {
     }
   }
 
+  copyNotice(item: NoticeItem, isRead: boolean): NoticeItem {
+    let result: NoticeItem = {
+      id: item.id,
+      title: item.title,
+      content: item.content,
+      time: item.time,
+      type: item.type,
+      isRead: isRead
+    };
+    return result;
+  }
+
   markAsRead(id: number) {
-    const notice = this.notices.find(item => item.id === id);
-    if (notice) {
-      notice.isRead = true;
+    NoticePersistence.markRead(id);
+    let next: NoticeItem[] = [];
+    for (let i = 0; i < this.notices.length; i++) {
+      let item = this.notices[i];
+      let read = item.id === id ? true : item.isRead;
+      next.push(this.copyNotice(item, read));
     }
+    this.notices = next;
+  }
+
+  markAllRead() {
+    let hasUnread = false;
+    for (let i = 0; i < this.notices.length; i++) {
+      if (!this.notices[i].isRead) {
+        hasUnread = true;
+        break;
+      }
+    }
+    if (!hasUnread) {
+      promptAction.showToast({ message: '没有未读消息' });
+      return;
+    }
+    let allIds: number[] = [];
+    for (let i = 0; i < this.notices.length; i++) {
+      allIds.push(this.notices[i].id);
+    }
+    NoticePersistence.markAllRead(allIds);
+    let next: NoticeItem[] = [];
+    for (let i = 0; i < this.notices.length; i++) {
+      next.push(this.copyNotice(this.notices[i], true));
+    }
+    this.notices = next;
+    promptAction.showToast({ message: '已全部标记为已读' });
   }
 
   build() {
@@ -116,9 +184,7 @@ struct NoticePage {
           .fontSize(14)
           .fontColor('#FF5000')
           .onClick(() => {
-            this.notices.forEach(notice => {
-              notice.isRead = true;
-            });
+            this.markAllRead();
           })
       }
       .width('100%')
@@ -177,7 +243,7 @@ struct NoticePage {
               this.markAsRead(notice.id);
             })
           }
-        }, (notice: NoticeItem) => notice.id.toString())
+        }, (notice: NoticeItem) => `n-${notice.id}-${notice.isRead ? '1' : '0'}`)
       }
       .width('100%')
       .layoutWeight(1)

@@ -14,7 +14,6 @@ struct PayPage {
   @State payAmount: number = 0;
   @State selectedCouponId: string = '';
   @State usableCoupons: Coupon[] = [];
-  @State payMethod: string = 'wechat';
   @State paying: boolean = false;
   @State userBalance: number = 0;
 
@@ -82,34 +81,25 @@ struct PayPage {
     if (this.paying) {
       return;
     }
-    if (this.payMethod === 'balance') {
-      this.refreshBalance();
-      if (this.userBalance < this.payAmount) {
-        promptAction.showToast({ message: '余额不足，请选择其他支付方式' });
-        return;
-      }
+    this.refreshBalance();
+    if (this.userBalance < this.payAmount) {
+      promptAction.showToast({ message: '余额不足，无法完成支付' });
+      return;
     }
     this.paying = true;
-    setTimeout(() => {
-      let order = GlobalStore.createOrder(this.payItems, this.selectedCouponId, this.payMethod);
-      if (order === null) {
-        this.paying = false;
-        if (this.payMethod === 'balance') {
-          promptAction.showToast({ message: '余额不足，支付未完成' });
-        } else {
-          promptAction.showToast({ message: '支付失败，请重试' });
-        }
-        return;
-      }
-      if (this.fromCart) {
-        GlobalStore.removeCartItemsForPayItems(this.payItems);
-      }
-      this.paying = false;
-      router.replaceUrl({
-        url: 'pages/PayResultPage',
-        params: { orderId: order.orderId, payAmount: order.payAmount } as PayResultParams
-      });
-    }, 1200);
+    let order = GlobalStore.createOrder(this.payItems, this.selectedCouponId, 'balance');
+    this.paying = false;
+    if (order === null) {
+      promptAction.showToast({ message: '余额不足，支付未完成' });
+      return;
+    }
+    if (this.fromCart) {
+      GlobalStore.removeCartItemsForPayItems(this.payItems);
+    }
+    router.replaceUrl({
+      url: 'pages/PayResultPage',
+      params: { orderId: order.orderId, payAmount: order.payAmount } as PayResultParams
+    });
   }
 
   build() {
@@ -212,9 +202,27 @@ struct PayPage {
               .fontSize(16)
               .fontWeight(FontWeight.Bold)
               .width('100%')
-            this.payMethodRow('wechat', '微信支付')
-            this.payMethodRow('alipay', '支付宝')
-            this.payBalanceRow()
+            Row() {
+              Text('余额支付')
+                .fontSize(15)
+              Blank()
+              Text('●')
+                .fontSize(16)
+                .fontColor(AppTheme.PRIMARY)
+            }
+            .width('100%')
+            .height(44)
+            Row() {
+              Text(`当前余额 ￥${this.userBalance.toFixed(2)}`)
+                .fontSize(12)
+                .fontColor(AppTheme.TEXT_HINT)
+              if (this.userBalance < this.payAmount) {
+                Text('（不足）')
+                  .fontSize(12)
+                  .fontColor(AppTheme.PRIMARY)
+              }
+            }
+            .width('100%')
           }
           .width('92%')
           .padding(14)
@@ -271,8 +279,7 @@ struct PayPage {
           .fontSize(16)
           .fontWeight(FontWeight.Bold)
           .backgroundColor(this.paying ? AppTheme.BTN_DISABLED : AppTheme.PRIMARY)
-          .enabled(!this.paying && this.payItems.length > 0 &&
-            !(this.payMethod === 'balance' && this.userBalance < this.payAmount))
+          .enabled(!this.paying && this.payItems.length > 0 && this.userBalance >= this.payAmount)
           .onClick(() => {
             this.doPay();
           })
@@ -286,51 +293,4 @@ struct PayPage {
     .backgroundColor(AppTheme.BG_PAGE)
   }
 
-  @Builder
-  payBalanceRow() {
-    Column({ space: 4 }) {
-      Row() {
-        Text('余额支付')
-          .fontSize(15)
-        Blank()
-        Text(this.payMethod === 'balance' ? '●' : '○')
-          .fontSize(16)
-          .fontColor(this.payMethod === 'balance' ? AppTheme.PRIMARY : AppTheme.BTN_DISABLED)
-      }
-      .width('100%')
-      Row() {
-        Text(`当前余额 ￥${this.userBalance.toFixed(2)}`)
-          .fontSize(12)
-          .fontColor(AppTheme.TEXT_HINT)
-        if (this.payMethod === 'balance' && this.userBalance < this.payAmount) {
-          Text('（不足）')
-            .fontSize(12)
-            .fontColor(AppTheme.PRIMARY)
-        }
-      }
-      .width('100%')
-    }
-    .width('100%')
-    .padding({ top: 4, bottom: 4 })
-    .onClick(() => {
-      this.payMethod = 'balance';
-    })
-  }
-
-  @Builder
-  payMethodRow(method: string, label: string) {
-    Row() {
-      Text(label)
-        .fontSize(15)
-      Blank()
-      Text(this.payMethod === method ? '●' : '○')
-        .fontSize(16)
-        .fontColor(this.payMethod === method ? AppTheme.PRIMARY : AppTheme.BTN_DISABLED)
-    }
-    .width('100%')
-    .height(44)
-    .onClick(() => {
-      this.payMethod = method;
-    })
-  }
 }

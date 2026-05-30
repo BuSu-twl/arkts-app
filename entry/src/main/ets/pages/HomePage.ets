@@ -1,6 +1,5 @@
 import router from '@ohos.router';
 import promptAction from '@ohos.promptAction';
-import productData from '../../../mock/product.json';
 import { Product, Coupon, GlobalStore, RouteParams, ProductUtils } from '../model/Models';
 import { BottomNavBar } from '../components/BottomNavBar';
 import { AppTheme } from '../common/AppTheme';
@@ -9,7 +8,7 @@ import { ensureAppData } from '../common/AppInit';
 @Entry
 @Component
 struct HomePage {
-  private products: Product[] = productData.data as Product[];
+  private products: Product[] = [];
   @State hotCarousel: Product[] = [];
   @State personalRecommends: Product[] = [];
   @State personalHint: string = '';
@@ -19,12 +18,9 @@ struct HomePage {
 
   aboutToAppear() {
     ensureAppData();
-    if (GlobalStore.allProducts.length > 0) {
-      this.products = GlobalStore.allProducts;
-    }
-    GlobalStore.allProducts = this.products;
+    this.products = GlobalStore.allProducts;
     this.hotCarousel = ProductUtils.getTopHotProducts(this.products, 5);
-    this.categoryRecommends = ProductUtils.getCategoryTopProducts(this.products);
+    this.refreshCategoryRecommends();
     this.refreshClaimed();
     this.refreshPersonalRecommends();
   }
@@ -32,6 +28,11 @@ struct HomePage {
   onPageShow() {
     this.refreshClaimed();
     this.refreshPersonalRecommends();
+    this.refreshCategoryRecommends();
+  }
+
+  refreshCategoryRecommends() {
+    this.categoryRecommends = GlobalStore.getCategoryFeaturedRecommend(6);
   }
 
   refreshPersonalRecommends() {
@@ -40,6 +41,9 @@ struct HomePage {
   }
 
   refreshClaimed() {
+    if (GlobalStore.isLoggedIn()) {
+      GlobalStore.syncClaimedCouponsFromCurrentUser();
+    }
     this.claimedIds = GlobalStore.claimedCouponIds.slice();
   }
 

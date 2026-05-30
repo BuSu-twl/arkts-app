@@ -2,6 +2,8 @@ import { AbilityConstant, ConfigurationConstant, UIAbility, Want } from '@kit.Ab
 import { hilog } from '@kit.PerformanceAnalysisKit';
 import { window } from '@kit.ArkUI';
 import { initAppData } from '../common/AppInit';
+import { UserPersistence } from '../common/UserPersistence';
+import { NoticePersistence } from '../common/NoticePersistence';
 
 const DOMAIN = 0x0000;
 
@@ -22,6 +24,8 @@ export default class EntryAbility extends UIAbility {
   onWindowStageCreate(windowStage: window.WindowStage): void {
     // Main window is created, set main page for this ability
     hilog.info(DOMAIN, 'testTag', '%{public}s', 'Ability onWindowStageCreate');
+    UserPersistence.init(this.context);
+    NoticePersistence.init(this.context);
     initAppData();
 
     windowStage.loadContent('pages/HomePage', (err) => {

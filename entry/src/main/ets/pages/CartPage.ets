@@ -1,7 +1,7 @@
 ﻿// path: entry/src/main/ets/pages/CartPage.ets
 import router from '@ohos.router';
 import promptAction from '@ohos.promptAction';
-import { Product, PayItem, GlobalStore, RouteParams, PayRouteParams } from '../model/Models';
+import { Product, PayItem, GlobalStore, RouteParams, PayRouteParams, ProductUtils } from '../model/Models';
 import { AppTheme } from '../common/AppTheme';
 import { ensureAppData } from '../common/AppInit';
 
@@ -47,6 +47,7 @@ struct CartPage {
         description: item.description,
         images: item.images,
         shopname: item.shopname,
+        shopAvatar: item.shopAvatar,
         hot: item.hot,
         count: item.count ?? 1,
         category: item.category
@@ -112,6 +113,14 @@ struct CartPage {
     this.isAllSelected = this.cartList.every(item => this.selectedItems.has(item.id));
   }
 
+  goBack(): void {
+    try {
+      router.back();
+    } catch (e) {
+      router.replaceUrl({ url: 'pages/MySetting' });
+    }
+  }
+
   goCheckout() {
     let payItems: PayItem[] = [];
     for (let i = 0; i < this.cartList.length; i++) {
@@ -119,7 +128,10 @@ struct CartPage {
         payItems.push(GlobalStore.toPayItem(this.cartList[i]));
       }
     }
-    if (payItems.length === 0) return;
+    if (payItems.length === 0) {
+      promptAction.showToast({ message: '请先选择要结算的商品' });
+      return;
+    }
     router.pushUrl({
       url: 'pages/PayPage',
       params: { items: payItems, fromCart: true } as PayRouteParams
@@ -128,14 +140,29 @@ struct CartPage {
 
   build() {
     Column() {
-      // 1. 顶部栏（点击首页可以跳转）
       Row() {
-        Text("首页").fontSize(16).fontColor(AppTheme.PRIMARY).fontWeight(FontWeight.Bold)
-          .onClick(() => router.replaceUrl({ url: 'pages/HomePage' }))
-        Text("购物车").fontSize(20).fontWeight(FontWeight.Bold).layoutWeight(1).textAlign(TextAlign.Center)
+        Text('< 返回')
+          .fontSize(16)
+          .fontColor(AppTheme.TEXT_PRIMARY)
+          .onClick(() => {
+            this.goBack();
+          })
+        Text('购物车')
+          .fontSize(18)
+          .fontWeight(FontWeight.Bold)
+          .layoutWeight(1)
+          .textAlign(TextAlign.Center)
+        Text('首页')
+          .fontSize(14)
+          .fontColor(AppTheme.PRIMARY)
+          .width(48)
+          .textAlign(TextAlign.End)
+          .onClick(() => {
+            router.replaceUrl({ url: 'pages/HomePage' });
+          })
       }
       .width('100%')
-      .padding(15)
+      .padding(16)
       .backgroundColor(AppTheme.WHITE)
 
       // 2. 主滚动区
@@ -182,7 +209,7 @@ struct CartPage {
               ForEach(this.recommends, (item: Product) => {
                 GridItem() {
                   Column() {
-                    Image($rawfile(item.images[0])).width('100%').height(100).objectFit(ImageFit.Cover)
+                    Image($rawfile(ProductUtils.getProductImageFile(item))).width('100%').height(100).objectFit(ImageFit.Cover)
                       .onClick(() => router.pushUrl({
                         url: 'pages/ProductDetail',
                         params: { product: item } as RouteParams
@@ -200,7 +227,7 @@ struct CartPage {
                   }
                   .backgroundColor(AppTheme.WHITE).borderRadius(8).padding(5)
                 }
-              })
+              }, (item: Product) => `cart-rec-${item.id}`)
             }.columnsTemplate('1fr 1fr').columnsGap(8).rowsGap(8).height(450)
           }
         }
@@ -255,7 +282,7 @@ struct CartPage {
       }.padding({ right: 8 }).justifyContent(FlexAlign.Center)
 
       // 2. 左二：商品图片
-      Image($rawfile(item.images[0]))
+      Image($rawfile(ProductUtils.getProductImageFile(item)))
         .width(85)
         .height(85)
         .borderRadius(10)

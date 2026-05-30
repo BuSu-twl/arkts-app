@@ -1,7 +1,6 @@
 {
   "src": [
     "pages/Login",
-    "pages/SmsLogin",
     "pages/ForgetPwd",
     "pages/Register",
     "pages/HomePage",
@@ -13,6 +12,7 @@
     "pages/PayPage",
     "pages/PayResultPage",
     "pages/OrderListPage",
+    "pages/CouponPage",
     "pages/edit",
     "pages/notice",
     "pages/private"

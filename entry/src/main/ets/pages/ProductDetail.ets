@@ -1,8 +1,9 @@
 // path: entry/src/main/ets/pages/ProductDetail.ets
 import router from '@ohos.router';
 import promptAction from '@ohos.promptAction';
-import { Product, GlobalStore, RouteParams, PayRouteParams } from '../model/Models';
+import { Product, GlobalStore, RouteParams, PayRouteParams, ProductUtils } from '../model/Models';
 import { AppTheme } from '../common/AppTheme';
+import { ensureAppData } from '../common/AppInit';
 
 @Entry
 @Component
@@ -11,13 +12,27 @@ struct ProductDetail {
     id: 0, name: '', price: 0, description: '',
     images: [], shopname: '', hot: ''
   };
+  @State isFavorited: boolean = false;
 
   aboutToAppear() {
+    ensureAppData();
     const params = router.getParams() as RouteParams;
     if (params && params.product) {
       this.item = params.product;
       GlobalStore.recordBrowse(this.item.id);
+      this.refreshFavoriteState();
+    } else {
+      promptAction.showToast({ message: '商品信息无效' });
+      router.back();
     }
+  }
+
+  onPageShow() {
+    this.refreshFavoriteState();
+  }
+
+  refreshFavoriteState() {
+    this.isFavorited = GlobalStore.isProductFavorited(this.item.id);
   }
 
   build() {
@@ -58,7 +73,12 @@ struct ProductDetail {
 
           // 店铺名片区
           Row() {
-            Circle({ width: 45, height: 45 }).fill(AppTheme.BG_DISABLED)
+            Image($rawfile(ProductUtils.getShopAvatarRawPath(this.item)))
+              .width(45)
+              .height(45)
+              .borderRadius(22)
+              .objectFit(ImageFit.Cover)
+              .backgroundColor(AppTheme.BG_DISABLED)
             Column() {
               Text(this.item.shopname).fontSize(15).fontWeight(FontWeight.Medium)
               Text("进店逛逛 >").fontSize(12).fontColor(AppTheme.TEXT_HINT).margin({ top: 3 })
@@ -83,17 +103,37 @@ struct ProductDetail {
 
         // 收藏按钮
         Column() {
-          Image($r('app.media.star')).width(20).height(20)//grayscale(1) // 灰色示意未收藏
-          Text("收藏").fontSize(10)
+          if (this.isFavorited) {
+            Image($r('app.media.favorite_active'))
+              .width(24)
+              .height(24)
+              .objectFit(ImageFit.Contain)
+            Text('已收藏')
+              .fontSize(10)
+              .fontColor(AppTheme.PRIMARY)
+          } else {
+            Image($r('app.media.favorite'))
+              .width(20)
+              .height(20)
+              .objectFit(ImageFit.Contain)
+            Text('收藏')
+              .fontSize(10)
+          }
         }
         .margin({ right: 20 })
         .onClick(() => {
-          if (!GlobalStore.addToFavorite(this.item)) {
+          if (!GlobalStore.isLoggedIn()) {
             promptAction.showToast({ message: '请先登录后再收藏' });
             router.pushUrl({ url: 'pages/Login' });
             return;
           }
-          AlertDialog.show({ message: '收藏成功！' });
+          if (this.isFavorited) {
+            promptAction.showToast({ message: '已在收藏中' });
+            return;
+          }
+          GlobalStore.addToFavorite(this.item);
+          this.isFavorited = true;
+          promptAction.showToast({ message: '收藏成功' });
         })
 
         Blank()

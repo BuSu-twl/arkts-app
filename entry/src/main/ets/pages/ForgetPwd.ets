@@ -1,78 +1,46 @@
 import router from '@ohos.router';
 import promptAction from '@ohos.promptAction';
 import { GlobalStore } from '../model/Models';
-import { initAppData } from '../common/AppInit';
+import { ensureAppData } from '../common/AppInit';
 import { AppTheme } from '../common/AppTheme';
 
 @Entry
 @Component
 struct ForgetPwd {
   @State phone: string = '';
-  @State code: string = '';
   @State newPwd: string = '';
   @State confirmPwd: string = '';
-  @State countDown: number = 0;
-  @State btnEnable: boolean = true;
 
   aboutToAppear() {
-    initAppData();
-  }
-
-  startCountDown(): void {
-    this.countDown = 60;
-    this.btnEnable = false;
-    const timer: number = setInterval((): void => {
-      this.countDown--;
-      if (this.countDown <= 0) {
-        clearInterval(timer);
-        this.btnEnable = true;
-      }
-    }, 1000);
-  }
-
-  getCode(): void {
-    if (this.phone.length !== 11) {
-      try {
-        promptAction.showToast({ message: '请输入正确手机号' });
-      } catch (e) {}
-      return;
-    }
-    this.startCountDown();
-    try {
-      promptAction.showToast({ message: '验证码已发送' });
-    } catch (e) {}
+    ensureAppData();
   }
 
   resetPwd(): void {
     if (!this.phone) {
-      try {
-        promptAction.showToast({ message: '请输入手机号' });
-      } catch (e) {}
+      promptAction.showToast({ message: '请输入手机号' });
       return;
     }
-    if (!this.code) {
-      try {
-        promptAction.showToast({ message: '请输入验证码' });
-      } catch (e) {}
+    if (this.phone.length !== 11) {
+      promptAction.showToast({ message: '请输入11位有效手机号' });
       return;
     }
     if (!this.newPwd) {
-      try {
-        promptAction.showToast({ message: '请设置新密码' });
-      } catch (e) {}
+      promptAction.showToast({ message: '请设置新密码' });
+      return;
+    }
+    if (this.newPwd.length < 6) {
+      promptAction.showToast({ message: '密码至少6位' });
       return;
     }
     if (this.newPwd !== this.confirmPwd) {
-      try {
-        promptAction.showToast({ message: '两次密码不一致' });
-      } catch (e) {}
+      promptAction.showToast({ message: '两次密码不一致' });
       return;
     }
-    if (GlobalStore.resetPassword(this.phone, this.code, this.newPwd)) {
+    if (GlobalStore.resetPassword(this.phone, this.newPwd)) {
       promptAction.showToast({ message: '密码重置成功，请重新登录' });
       router.back();
     } else {
-      promptAction.showToast({ message: '手机号或验证码错误' });
+      promptAction.showToast({ message: '该手机号未注册' });
     }
   }
 
@@ -96,34 +64,22 @@ struct ForgetPwd {
       .padding(15);
 
       Column({ space: 20 }) {
-        TextInput({ text: this.phone, placeholder: '请输入手机号' })
+        Text('验证已注册手机号后可直接设置新密码')
+          .fontSize(13)
+          .fontColor(AppTheme.TEXT_HINT)
+          .width('100%')
+
+        TextInput({ text: this.phone, placeholder: '请输入注册手机号' })
           .width('100%')
           .height(50)
           .backgroundColor(AppTheme.WHITE)
           .borderRadius(8)
           .padding({ left: 15 })
+          .maxLength(11)
+          .type(InputType.PhoneNumber)
           .onChange((v: string) => { this.phone = v; });
 
-        Row({ space: 10 }) {
-          TextInput({ text: this.code, placeholder: '请输入验证码' })
-            .layoutWeight(1)
-            .height(50)
-            .backgroundColor(AppTheme.WHITE)
-            .borderRadius(8)
-            .padding({ left: 15 })
-            .onChange((v: string) => { this.code = v; });
-
-          Button(this.btnEnable ? '获取验证码' : `${this.countDown}s`)
-            .width(110)
-            .height(50)
-            .backgroundColor(this.btnEnable ? AppTheme.PRIMARY : AppTheme.BTN_DISABLED)
-            .borderRadius(8)
-            .enabled(this.btnEnable)
-            .onClick(() => { this.getCode(); });
-        }
-        .width('100%');
-
-        TextInput({ text: this.newPwd, placeholder: '请设置新密码' })
+        TextInput({ text: this.newPwd, placeholder: '请设置新密码（至少6位）' })
           .width('100%')
           .height(50)
           .backgroundColor(AppTheme.WHITE)

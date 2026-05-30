@@ -1,6 +1,8 @@
 import router from '@ohos.router';
+import promptAction from '@ohos.promptAction';
 import { GlobalStore, PayResultParams } from '../model/Models';
 import { AppTheme } from '../common/AppTheme';
+import { ensureAppData } from '../common/AppInit';
 
 @Entry
 @Component
@@ -10,10 +12,15 @@ struct PayResultPage {
   @State payMethod: string = '';
 
   aboutToAppear() {
+    ensureAppData();
     const params = router.getParams() as PayResultParams;
-    if (params) {
-      this.orderId = params.orderId ?? '';
+    if (params && params.orderId) {
+      this.orderId = params.orderId;
       this.payAmount = params.payAmount ?? 0;
+    } else {
+      promptAction.showToast({ message: '支付结果无效' });
+      router.replaceUrl({ url: 'pages/HomePage' });
+      return;
     }
     let order = GlobalStore.getOrderById(this.orderId);
     if (order !== null) {
@@ -22,16 +29,7 @@ struct PayResultPage {
   }
 
   getPayMethodLabel(): string {
-    if (this.payMethod === 'wechat') {
-      return '微信支付';
-    }
-    if (this.payMethod === 'alipay') {
-      return '支付宝';
-    }
-    if (this.payMethod === 'balance') {
-      return '余额支付';
-    }
-    return '';
+    return GlobalStore.getPayMethodLabel(this.payMethod);
   }
 
   build() {

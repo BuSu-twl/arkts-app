@@ -1,7 +1,7 @@
 import router from '@ohos.router';
 import promptAction from '@ohos.promptAction';
 import { GlobalStore } from '../model/Models';
-import { initAppData } from '../common/AppInit';
+import { ensureAppData } from '../common/AppInit';
 import { navigateAfterLogin } from '../common/LoginNav';
 import { AppTheme } from '../common/AppTheme';
 
@@ -19,7 +19,7 @@ struct Register {
   @State btnEnable: boolean = true;
 
   aboutToAppear() {
-    initAppData();
+    ensureAppData();
     this.issueCaptcha(false);
   }
 
@@ -63,7 +63,7 @@ struct Register {
     this.hasCaptcha = true;
     this.code = '';
     if (showToast) {
-      promptAction.showToast({ message: '验证码已刷新，请对照输入' });
+      promptAction.showToast({ message: '图形验证码已刷新' });
     }
   }
 
@@ -84,11 +84,11 @@ struct Register {
       this.issueCaptcha(false);
     }
     if (this.code.length === 0) {
-      promptAction.showToast({ message: '请输入验证码' });
+      promptAction.showToast({ message: '请输入图形验证码' });
       return;
     }
     if (this.code !== this.generatedCode) {
-      promptAction.showToast({ message: '验证码错误，请重新输入' });
+      promptAction.showToast({ message: '图形验证码错误，请重新输入' });
       this.issueCaptcha(true);
       return;
     }
@@ -105,8 +105,7 @@ struct Register {
       return;
     }
 
-    let smsCode = this.generateRandomCode();
-    let user = GlobalStore.registerUser(phoneNum, this.pwd, smsCode);
+    let user = GlobalStore.registerUser(phoneNum, this.pwd);
     if (user === null) {
       promptAction.showToast({ message: '注册失败，请检查信息后重试' });
       return;
@@ -156,7 +155,7 @@ struct Register {
             });
 
           Column({ space: 8 }) {
-            Text('请输入下方验证码（区分大小写无，仅数字）')
+            Text('请输入下方图形验证码（仅数字）')
               .fontSize(12)
               .fontColor(AppTheme.TEXT_HINT)
               .width('100%')
@@ -189,7 +188,7 @@ struct Register {
             }
             .width('100%')
 
-            TextInput({ text: this.code, placeholder: '请输入验证码' })
+            TextInput({ text: this.code, placeholder: '请输入图形验证码' })
               .width('100%')
               .height(50)
               .backgroundColor(AppTheme.WHITE)

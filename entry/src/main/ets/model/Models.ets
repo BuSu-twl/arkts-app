@@ -1,3 +1,6 @@
+import { UserPersistence } from '../common/UserPersistence';
+import { AvatarUtils } from '../common/AvatarUtils';
+
 export interface Product {
   id: number;
   name: string;
@@ -5,6 +8,8 @@ export interface Product {
   description: string;
   images: string[];
   shopname: string;
+  /** rawfile 店铺头像，如 avatars/img/storeImg/1.png */
+  shopAvatar?: string;
   hot: string;
   category?: string;
   count?: number;
@@ -92,39 +97,104 @@ export class ProductUtils {
     return result;
   }
 
-  static getCategoryTopProducts(products: Product[]): Product[] {
-    let categories: string[] = [];
-    for (let i = 0; i < products.length; i++) {
-      let cat = products[i].category ?? '其他';
-      let exists = false;
-      for (let j = 0; j < categories.length; j++) {
-        if (categories[j] === cat) {
-          exists = true;
-          break;
+  static getBestProductInCategory(products: Product[], category: string): Product | null {
+    let best: Product | null = null;
+    let bestHot = -1;
+    for (let j = 0; j < products.length; j++) {
+      if ((products[j].category ?? '其他') === category) {
+        let hotVal = ProductUtils.parseHotValue(products[j].hot);
+        if (hotVal > bestHot) {
+          bestHot = hotVal;
+          best = products[j];
         }
-      }
-      if (!exists) {
-        categories.push(cat);
       }
     }
+    return best;
+  }
+
+  static getCategoryPeakHot(products: Product[], category: string): number {
+    let best = ProductUtils.getBestProductInCategory(products, category);
+    if (best === null) {
+      return 0;
+    }
+    return ProductUtils.parseHotValue(best.hot);
+  }
+
+  static getProductsForCategories(products: Product[], categories: string[]): Product[] {
     let result: Product[] = [];
     for (let i = 0; i < categories.length; i++) {
-      let best: Product | null = null;
-      let bestHot = -1;
-      for (let j = 0; j < products.length; j++) {
-        if ((products[j].category ?? '其他') === categories[i]) {
-          let hotVal = ProductUtils.parseHotValue(products[j].hot);
-          if (hotVal > bestHot) {
-            bestHot = hotVal;
-            best = products[j];
-          }
-        }
-      }
+      let best = ProductUtils.getBestProductInCategory(products, categories[i]);
       if (best !== null) {
         result.push(best);
       }
     }
     return result;
+  }
+
+  /** 按各分类热度峰值排序，取前 count 个品类 */
+  static pickTopCategoriesByHot(products: Product[], count: number): string[] {
+    let categories = ProductUtils.getAllCategories(products);
+    let ranked = categories.slice();
+    for (let i = 0; i < ranked.length - 1; i++) {
+      for (let j = 0; j < ranked.length - 1 - i; j++) {
+        let hotA = ProductUtils.getCategoryPeakHot(products, ranked[j]);
+        let hotB = ProductUtils.getCategoryPeakHot(products, ranked[j + 1]);
+        if (hotA < hotB) {
+          let temp = ranked[j];
+          ranked[j] = ranked[j + 1];
+          ranked[j + 1] = temp;
+        }
+      }
+    }
+    let limit = count < ranked.length ? count : ranked.length;
+    return ranked.slice(0, limit);
+  }
+
+  static getCategoryTopProducts(products: Product[]): Product[] {
+    return ProductUtils.getProductsForCategories(products, ProductUtils.getAllCategories(products));
+  }
+
+  static getProductImageFile(product: Product): string {
+    if (product.images !== undefined && product.images.length > 0 && product.images[0].length > 0) {
+      return product.images[0];
+    }
+    return '1.png';
+  }
+
+  static readonly DEFAULT_SHOP_AVATAR_RAW: string = 'avatars/img/storeImg/1.png';
+
+  static getShopAvatarRawPath(product: Product): string {
+    if (product.shopAvatar !== undefined && product.shopAvatar.length > 0) {
+      return product.shopAvatar;
+    }
+    return ProductUtils.DEFAULT_SHOP_AVATAR_RAW;
+  }
+
+  /** 订单项图片：兼容 mock 中 productN.jpg，回退到商品 catalog */
+  static resolvePayItemImage(item: PayItem): string {
+    if (item.image !== undefined && item.image.length > 0) {
+      let img = item.image;
+      if (img.endsWith('.jpg') && img.indexOf('product') >= 0) {
+        let digits = '';
+        for (let i = 0; i < img.length; i++) {
+          let c = img.charAt(i);
+          if (c >= '0' && c <= '9') {
+            digits += c;
+          }
+        }
+        if (digits.length > 0) {
+          return `${digits}.png`;
+        }
+      }
+      if (img.endsWith('.png')) {
+        return img;
+      }
+    }
+    let p = GlobalStore.findProductById(item.productId);
+    if (p !== null) {
+      return ProductUtils.getProductImageFile(p);
+    }
+    return '1.png';
   }
 }
 
@@ -284,6 +354,40 @@ export class RecommendUtils {
     return categoryScores.length > 0;
   }
 
+  static buildCategoryWeightsForUser(user: User | null, browseIds: number[], products: Product[]): CategoryScore[] {
+    if (user !== null) {
+      return RecommendUtils.buildCategoryWeights(user, browseIds, products);
+    }
+    let scores: CategoryScore[] = [];
+    for (let i = 0; i < browseIds.length; i++) {
+      let cat = RecommendUtils.getProductCategory(browseIds[i], products);
+      RecommendUtils.addCategoryScore(scores, cat, 1);
+    }
+    return RecommendUtils.sortCategoryScoresDesc(scores);
+  }
+
+  /** 分类精选：取兴趣分最高的 count 个品类，每类展示热度最高的一件 */
+  static getInterestCategoryFeatured(
+    products: Product[],
+    user: User | null,
+    browseIds: number[],
+    count: number
+  ): Product[] {
+    if (products.length === 0 || count <= 0) {
+      return [];
+    }
+    let categoryScores = RecommendUtils.buildCategoryWeightsForUser(user, browseIds, products);
+    let selected: string[] = [];
+    if (RecommendUtils.hasBehaviorSignals(categoryScores)) {
+      for (let i = 0; i < categoryScores.length && selected.length < count; i++) {
+        selected.push(categoryScores[i].category);
+      }
+    } else {
+      selected = ProductUtils.pickTopCategoriesByHot(products, count);
+    }
+    return ProductUtils.getProductsForCategories(products, selected);
+  }
+
   static getPersonalizedRecommend(
     products: Product[],
     user: User | null,
@@ -412,6 +516,7 @@ export class GlobalStore {
   static currentUser: User | null = null;
   static readonly MAX_BROWSE_HISTORY: number = 20;
   static usersLoaded: boolean = false;
+  static productsLoaded: boolean = false;
   static pendingPay: PayRouteParams | null = null;
 
   static readonly COUPONS: Coupon[] = [
@@ -437,6 +542,7 @@ export class GlobalStore {
     }
     GlobalStore.claimedCouponIds.push(couponId);
     GlobalStore.syncCouponsToCurrentUser();
+    GlobalStore.persistUsersToDisk();
     return true;
   }
 
@@ -516,6 +622,7 @@ export class GlobalStore {
       description: source.description,
       images: source.images,
       shopname: source.shopname,
+      shopAvatar: source.shopAvatar,
       hot: source.hot,
       category: source.category,
       count: count
@@ -625,6 +732,16 @@ export class GlobalStore {
     );
   }
 
+  static getCategoryFeaturedRecommend(count: number): Product[] {
+    let user = GlobalStore.buildRecommendUserSnapshot();
+    return RecommendUtils.getInterestCategoryFeatured(
+      GlobalStore.allProducts,
+      user,
+      GlobalStore.browseHistory,
+      count
+    );
+  }
+
   static getPersonalRecommendHint(): string {
     if (!GlobalStore.isLoggedIn()) {
       return '登录后根据收藏、购物车与浏览记录推荐';
@@ -720,6 +837,25 @@ export class GlobalStore {
     GlobalStore.syncOrdersToCurrentUser();
   }
 
+  /** 写回 allUsers 并保存到沙箱 user_data.json */
+  static persistUsersToDisk(): void {
+    if (GlobalStore.currentUser !== null) {
+      GlobalStore.persistSessionOrders();
+      GlobalStore.persistSessionCartAndFavorites();
+      GlobalStore.syncCouponsToCurrentUser();
+      GlobalStore.syncBrowseToCurrentUser();
+      GlobalStore.syncBalanceToCurrentUser();
+      for (let i = 0; i < GlobalStore.allUsers.length; i++) {
+        let cu = GlobalStore.currentUser;
+        if (cu !== null && GlobalStore.allUsers[i].id === cu.id) {
+          GlobalStore.allUsers[i] = GlobalStore.copyUser(cu);
+          break;
+        }
+      }
+    }
+    UserPersistence.saveUsers(GlobalStore.allUsers as Object[]);
+  }
+
   static initUsers(userList: User[]): void {
     if (GlobalStore.usersLoaded) {
       return;
@@ -762,6 +898,7 @@ export class GlobalStore {
   static applyUserSession(user: User): void {
     let wasGuest = GlobalStore.currentUser === null;
     let guestCart = wasGuest ? GlobalStore.snapshotCart() : [];
+    let guestBrowse = wasGuest ? GlobalStore.copyProductIds(GlobalStore.browseHistory) : [];
     GlobalStore.persistSessionOrders();
     GlobalStore.persistSessionCartAndFavorites();
     GlobalStore.currentUser = GlobalStore.copyUser(user);
@@ -770,9 +907,19 @@ export class GlobalStore {
     GlobalStore.loadUserCart(GlobalStore.currentUser);
     GlobalStore.loadUserFavorites(GlobalStore.currentUser);
     GlobalStore.loadUserBrowseHistory(GlobalStore.currentUser);
+    if (wasGuest && guestBrowse.length > 0) {
+      GlobalStore.mergeBrowseIds(guestBrowse);
+      GlobalStore.syncBrowseToCurrentUser();
+    }
     if (wasGuest && guestCart.length > 0) {
       GlobalStore.mergeCartItemsIntoList(guestCart);
       GlobalStore.syncCartToCurrentUser();
+    }
+  }
+
+  static mergeBrowseIds(ids: number[]): void {
+    for (let i = 0; i < ids.length; i++) {
+      GlobalStore.recordBrowse(ids[i]);
     }
   }
 
@@ -911,22 +1058,8 @@ export class GlobalStore {
     return true;
   }
 
-  static loginBySms(phone: string, code: string): boolean {
-    let user = GlobalStore.findUserByPhone(phone);
-    if (user === null) {
-      return false;
-    }
-    if (user.smsCode !== code) {
-      return false;
-    }
-    GlobalStore.applyUserSession(user);
-    return true;
-  }
-
   static logout(): void {
-    GlobalStore.persistSessionOrders();
-    GlobalStore.syncBrowseToCurrentUser();
-    GlobalStore.persistSessionCartAndFavorites();
+    GlobalStore.persistUsersToDisk();
     GlobalStore.currentUser = null;
     GlobalStore.claimedCouponIds = [];
     GlobalStore.orderList = [];
@@ -935,7 +1068,7 @@ export class GlobalStore {
     GlobalStore.browseHistory = [];
   }
 
-  static registerUser(phone: string, password: string, smsCode: string): User | null {
+  static registerUser(phone: string, password: string): User | null {
     if (phone.length !== 11) {
       return null;
     }
@@ -960,8 +1093,8 @@ export class GlobalStore {
       memberName: `user${newId}`,
       password: password,
       nickname: `用户${suffix}`,
-      avatar: `${newId}.png`,
-      smsCode: smsCode,
+      avatar: AvatarUtils.DEFAULT_AVATAR_STORED,
+      smsCode: '',
       claimedCouponIds: [],
       cartItems: [],
       favoriteIds: [],
@@ -976,19 +1109,56 @@ export class GlobalStore {
       return null;
     }
     GlobalStore.applyUserSession(saved);
+    GlobalStore.persistUsersToDisk();
     return GlobalStore.currentUser;
   }
 
-  static resetPassword(phone: string, code: string, newPassword: string): boolean {
+  static resetPassword(phone: string, newPassword: string): boolean {
     let user = GlobalStore.findUserByPhone(phone);
-    if (user === null || user.smsCode !== code) {
+    if (user === null) {
       return false;
     }
     user.password = newPassword;
     if (GlobalStore.currentUser !== null && GlobalStore.currentUser.id === user.id) {
       GlobalStore.currentUser.password = newPassword;
     }
+    GlobalStore.persistUsersToDisk();
     return true;
+  }
+
+  static updateUserPhone(newPhone: string): boolean {
+    if (GlobalStore.currentUser === null) {
+      return false;
+    }
+    if (newPhone.length !== 11) {
+      return false;
+    }
+    let existing = GlobalStore.findUserByPhone(newPhone);
+    if (existing !== null && existing.id !== GlobalStore.currentUser.id) {
+      return false;
+    }
+    GlobalStore.currentUser.phone = newPhone;
+    GlobalStore.currentUser.account = newPhone;
+    let user = GlobalStore.findUserById(GlobalStore.currentUser.id);
+    if (user !== null) {
+      user.phone = newPhone;
+      user.account = newPhone;
+    }
+    GlobalStore.persistUsersToDisk();
+    return true;
+  }
+
+  static getPayMethodLabel(method: string): string {
+    if (method === 'balance') {
+      return '余额';
+    }
+    if (method === 'wechat') {
+      return '微信';
+    }
+    if (method === 'alipay') {
+      return '支付宝';
+    }
+    return '余额';
   }
 
   static getDisplayName(): string {
@@ -1024,35 +1194,16 @@ export class GlobalStore {
     }
   }
 
-  /** 预设头像 rawfile 文件名，如 1.png */
-  static getPresetAvatarFile(index: number): string {
-    if (index >= 1 && index <= 30) {
-      return `${index}.png`;
-    }
-    return '1.png';
-  }
-
-  /** 头像 rawfile 路径；custom_ 开头为本地文件名片段 */
+  /** 头像 $rawfile 路径；custom_ 为沙箱自定义头像文件名 */
   static getAvatarRawPath(): string {
     if (GlobalStore.currentUser === null) {
       return '';
     }
-    let name = GlobalStore.currentUser.avatar;
-    if (name.length === 0) {
-      return '';
-    }
-    if (name.startsWith('custom_')) {
-      return name;
-    }
-    if (name.indexOf('/') >= 0) {
-      let parts = name.split('/');
-      return parts[parts.length - 1];
-    }
-    return name;
+    return AvatarUtils.resolveRawfilePath(GlobalStore.currentUser.avatar);
   }
 
   static isCustomAvatarName(name: string): boolean {
-    return name.startsWith('custom_');
+    return AvatarUtils.isCustomAvatar(name);
   }
 
   static hasAvatar(): boolean {
@@ -1076,7 +1227,7 @@ export class GlobalStore {
       } else {
         GlobalStore.cartList.push({
           id: p.id, name: p.name, price: p.price, description: p.description,
-          images: p.images, shopname: p.shopname, hot: p.hot, category: p.category, count: 1,
+          images: p.images, shopname: p.shopname, shopAvatar: p.shopAvatar, hot: p.hot, category: p.category, count: 1,
         });
       }
     }
@@ -1104,12 +1255,21 @@ export class GlobalStore {
       } else {
         GlobalStore.favoriteList.push({
           id: p.id, name: p.name, price: p.price, description: p.description,
-          images: p.images, shopname: p.shopname, hot: p.hot, category: p.category
+          images: p.images, shopname: p.shopname, shopAvatar: p.shopAvatar, hot: p.hot, category: p.category
         });
       }
     }
     GlobalStore.syncFavoritesToCurrentUser();
     return true;
+  }
+
+  static isProductFavorited(productId: number): boolean {
+    for (let i = 0; i < GlobalStore.favoriteList.length; i++) {
+      if (GlobalStore.favoriteList[i].id === productId) {
+        return true;
+      }
+    }
+    return false;
   }
 
   static removeFromFavoriteByIndex(index: number): void {
@@ -1158,6 +1318,32 @@ export class GlobalStore {
       sum += items[i].price * items[i].count;
     }
     return sum;
+  }
+
+  static getClaimedCoupons(): Coupon[] {
+    let result: Coupon[] = [];
+    for (let i = 0; i < GlobalStore.COUPONS.length; i++) {
+      if (GlobalStore.isCouponClaimed(GlobalStore.COUPONS[i].id)) {
+        result.push(GlobalStore.COUPONS[i]);
+      }
+    }
+    return result;
+  }
+
+  static getUnclaimedCoupons(): Coupon[] {
+    let result: Coupon[] = [];
+    for (let i = 0; i < GlobalStore.COUPONS.length; i++) {
+      if (!GlobalStore.isCouponClaimed(GlobalStore.COUPONS[i].id)) {
+        result.push(GlobalStore.COUPONS[i]);
+      }
+    }
+    return result;
+  }
+
+  static syncClaimedCouponsFromCurrentUser(): void {
+    if (GlobalStore.currentUser !== null) {
+      GlobalStore.claimedCouponIds = GlobalStore.copyStringArray(GlobalStore.currentUser.claimedCouponIds);
+    }
   }
 
   static getCouponById(couponId: string): Coupon | null {
@@ -1238,15 +1424,16 @@ export class GlobalStore {
     if (GlobalStore.currentUser === null) {
       return null;
     }
+    if (payMethod !== 'balance') {
+      return null;
+    }
     let copiedItems = GlobalStore.copyPayItems(items);
     let subtotal = GlobalStore.calcItemsTotal(copiedItems);
     let discount = GlobalStore.calcCouponDiscount(subtotal, couponId);
     let payAmount = GlobalStore.normalizeMoney(subtotal - discount);
-    if (payMethod === 'balance') {
-      let bal = GlobalStore.getUserBalance();
-      if (bal < payAmount) {
-        return null;
-      }
+    let bal = GlobalStore.getUserBalance();
+    if (bal < payAmount) {
+      return null;
     }
     let order: Order = {
       orderId: `ORD${Date.now()}`,
@@ -1261,12 +1448,10 @@ export class GlobalStore {
       createTime: GlobalStore.formatNow()
     };
     GlobalStore.orderList.push(order);
-    if (payMethod === 'balance') {
-      let bal = GlobalStore.getUserBalance();
-      GlobalStore.currentUser.balance = GlobalStore.normalizeMoney(bal - payAmount);
-      GlobalStore.syncBalanceToCurrentUser();
-    }
+    GlobalStore.currentUser.balance = GlobalStore.normalizeMoney(bal - payAmount);
+    GlobalStore.syncBalanceToCurrentUser();
     GlobalStore.syncOrdersToCurrentUser();
+    GlobalStore.persistUsersToDisk();
     return order;
   }
 

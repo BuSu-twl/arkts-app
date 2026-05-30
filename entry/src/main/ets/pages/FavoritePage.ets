@@ -1,8 +1,9 @@
 // path: entry/src/main/ets/pages/FavoritePage.ets
 import router from '@ohos.router';
 import promptAction from '@ohos.promptAction';
-import { Product, GlobalStore, RouteParams } from '../model/Models';
+import { Product, GlobalStore, RouteParams, ProductUtils } from '../model/Models';
 import { AppTheme } from '../common/AppTheme';
+import { ensureAppData } from '../common/AppInit';
 
 @Entry
 @Component
@@ -11,6 +12,7 @@ struct FavoritePage {
   @State recommends: Product[] = [];
 
   aboutToAppear() {
+    ensureAppData();
     this.refresh();
     this.recommends = GlobalStore.getPersonalizedRecommend(6);
   }
@@ -24,16 +26,40 @@ struct FavoritePage {
     this.favList = [...GlobalStore.favoriteList];
   }
 
+  goBack(): void {
+    try {
+      router.back();
+    } catch (e) {
+      router.replaceUrl({ url: 'pages/MySetting' });
+    }
+  }
+
   build() {
     Column() {
-      // 1. 顶部导航
       Row() {
-        Text("首页").fontSize(16).fontColor(AppTheme.PRIMARY).fontWeight(FontWeight.Bold)
-          .onClick(() => router.replaceUrl({ url: 'pages/HomePage' }))
-        //Blank()
-        Text("我的收藏").fontSize(18).fontWeight(FontWeight.Bold).padding({left: 100})
-        Blank()
-      }.width('100%').padding(15).backgroundColor(AppTheme.WHITE)
+        Text('< 返回')
+          .fontSize(16)
+          .fontColor(AppTheme.TEXT_PRIMARY)
+          .onClick(() => {
+            this.goBack();
+          })
+        Text('我的收藏')
+          .fontSize(18)
+          .fontWeight(FontWeight.Bold)
+          .layoutWeight(1)
+          .textAlign(TextAlign.Center)
+        Text('首页')
+          .fontSize(14)
+          .fontColor(AppTheme.PRIMARY)
+          .width(48)
+          .textAlign(TextAlign.End)
+          .onClick(() => {
+            router.replaceUrl({ url: 'pages/HomePage' });
+          })
+      }
+      .width('100%')
+      .padding(16)
+      .backgroundColor(AppTheme.WHITE)
 
       // 2. 动态滚动区域
       List({ space: 15 }) {
@@ -55,8 +81,21 @@ struct FavoritePage {
             Column() {
               ForEach(this.favList, (item: Product, index: number) => {
                 Row() {
-                  Image($rawfile(item.images[0])).width(60).height(60).borderRadius(8)
+                  Image($rawfile(ProductUtils.getProductImageFile(item)))
+                    .width(60).height(60).borderRadius(8)
+                    .onClick(() => {
+                      router.pushUrl({
+                        url: 'pages/ProductDetail',
+                        params: { product: item } as RouteParams
+                      });
+                    })
                   Text(item.name).layoutWeight(1).margin({ left: 10 }).maxLines(1).fontSize(14)
+                    .onClick(() => {
+                      router.pushUrl({
+                        url: 'pages/ProductDetail',
+                        params: { product: item } as RouteParams
+                      });
+                    })
                   Text("删除").fontColor(AppTheme.TEXT_HINT).fontSize(12).padding(10)
                     .onClick(() => {
                       GlobalStore.removeFromFavoriteByIndex(index);
@@ -64,14 +103,7 @@ struct FavoritePage {
                     })
                 }
                 .padding(12).backgroundColor(AppTheme.WHITE).borderRadius(12).margin({ bottom: 10 })
-                // 【核心修复】：为整行添加点击事件，跳转详情页
-                .onClick(() => {
-                  router.pushUrl({
-                    url: 'pages/ProductDetail',
-                    params: { product: item } as RouteParams
-                  })
-                })
-              })
+              }, (item: Product) => `fav-${item.id}`)
             }
           }
         }
@@ -87,7 +119,7 @@ struct FavoritePage {
             ForEach(this.recommends, (item: Product) => {
               GridItem() {
                 Column() {
-                  Image($rawfile(item.images[0])).width('100%').height(110).objectFit(ImageFit.Cover)
+                  Image($rawfile(ProductUtils.getProductImageFile(item))).width('100%').height(110).objectFit(ImageFit.Cover)
                   Text(item.name).fontSize(12).maxLines(1).margin(5)
                   Button("收藏").fontSize(10).height(22).backgroundColor(AppTheme.PRIMARY)
                     .onClick(() => {
@@ -109,7 +141,7 @@ struct FavoritePage {
                   })
                 })
               }
-            })
+            }, (item: Product) => `fav-rec-${item.id}`)
           }
           .columnsTemplate('1fr 1fr')
           .columnsGap(10)
