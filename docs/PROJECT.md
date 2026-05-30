@@ -12,7 +12,7 @@
 
 | 环节 | 说明 |
 |------|------|
-| 入口 Ability | `EntryAbility.ets` 在 `onWindowStageCreate` 中调用 `initAppData()` 加载 `product.json`、`user.json`，再 `loadContent('pages/HomePage')` |
+| 入口 Ability | `EntryAbility.ets` 初始化 `UserPersistence`、`NoticePersistence`，调用 `initAppData()` 加载商品与用户（用户优先读沙箱 `user_data.json`），再 `loadContent('pages/HomePage')` |
 | 首屏 | **首页** `HomePage`（非登录页，游客可浏览） |
 | 底部导航 | `BottomNavBar`：首页 / 排行榜 / **个人中心（MySetting）** |
 
@@ -23,7 +23,7 @@ Login, ForgetPwd, Register
 HomePage, RankPage, MySetting
 ProductDetail, FavoritePage, CartPage
 PayPage, PayResultPage, OrderListPage
-edit, notice, private
+CouponPage, edit, notice, private
 ```
 
 ### 1.3 主要跳转关系（运行路径）
@@ -66,7 +66,7 @@ flowchart TB
     M --> O
     M --> C
     M --> F[FavoritePage 收藏]
-    M -->|优惠券提示| H
+    M --> CP2[CouponPage 优惠券]
   end
 ```
 
@@ -78,7 +78,7 @@ flowchart TB
 | 领券下单 | 首页领券（需登录）→ 详情「立即购买」或购物车结算 → 支付 → 结果页 |
 | 未登录支付 | 支付页 → 登录 → `LoginNav` 自动回到支付页 |
 | 看排行 | Tab 排行榜 → 总排行/分类排行（左侧品类）→ 详情 |
-| 个人中心 | Tab **MySetting** → 修改资料 / 订单 / 购物车 / 收藏 / 通知 / 隐私 |
+| 个人中心 | Tab **MySetting** → 修改资料 / 订单 / 购物车 / 收藏 / 优惠券 / 通知 / 隐私 |
 
 ### 1.5 路由 API 约定
 
@@ -116,7 +116,7 @@ mindmap
       首页 HomePage
         热销 Top5 轮播
         优惠券领取
-        分类精选
+        兴趣 Top6 分类精选
       个性化推荐
         订单加权
         收藏/购物车/浏览
@@ -125,7 +125,8 @@ mindmap
         左侧品类分类榜
       商品详情
         加购
-        收藏
+        收藏双态图标
+        店铺头像
         立即购买
         浏览记录
     交易与订单
@@ -136,6 +137,7 @@ mindmap
       优惠券
         满减规则
         领取记录
+        CouponPage 独立页
       结算支付 PayPage
         仅余额支付
         余额不足拦截
@@ -148,16 +150,19 @@ mindmap
         菜单入口
       资料编辑 edit
         昵称/密码/头像
+        系统推荐头像
         换绑手机
       消息通知 notice
         本地静态列表
+        已读持久化
       隐私协议 private
     非功能需求
       Mock 数据
         product.json
-        user.json
-      会话内存
-        重启恢复初始 JSON
+        user.json 种子
+      沙箱持久化
+        user_data.json
+        notice_read.json
       UI 主题
         AppTheme 红白
       运行设备
@@ -176,26 +181,26 @@ mindmap
 │  └─ 登录态管理 ............. logout · pendingPay · LoginNav
 │
 ├─ 商品与浏览 ─────────────────────────────────────────
-│  ├─ 首页 ................... HomePage · 轮播/领券/分类精选
+│  ├─ 首页 ................... HomePage · 轮播/领券/兴趣 Top6 分类精选
 │  ├─ 个性化推荐 ............. RecommendUtils · 行为加权
 │  ├─ 排行榜 ................. RankPage · 全站榜/品类榜
-│  └─ 商品详情 ............... ProductDetail · 加购/收藏/购买
+│  └─ 商品详情 ............... ProductDetail · 加购/收藏双态/店铺头像/购买
 │
 ├─ 交易与订单 ─────────────────────────────────────────
 │  ├─ 购物车 ................. CartPage · 多用户隔离/已购置后
-│  ├─ 优惠券 ................. GlobalStore.COUPONS · claimCoupon
+│  ├─ 优惠券 ................. CouponPage · GlobalStore.claimCoupon
 │  ├─ 结算支付 ............... PayPage · 仅余额 · createOrder
 │  └─ 订单 ................... PayResultPage · OrderListPage
 │
 ├─ 个人中心 ───────────────────────────────────────────
 │  ├─ MySetting .............. 头像/余额/菜单/退出
-│  ├─ edit ................... 昵称/密码/头像/换绑手机
-│  ├─ notice ................. 本地静态消息
+│  ├─ edit ................... 昵称/密码/头像/换绑手机 · AvatarUtils
+│  ├─ notice ................. 静态消息 · NoticePersistence 已读
 │  └─ private ................ 隐私协议
 │
 └─ 非功能需求 ─────────────────────────────────────────
-   ├─ Mock 数据 ............... product.json + user.json
-   ├─ 会话内存 ............... 运行时 GlobalStore，重启恢复
+   ├─ Mock 数据 ............... product.json + user.json（种子）
+   ├─ 沙箱持久化 ............. user_data.json · notice_read.json
    ├─ UI 主题 ................. AppTheme #E60012
    └─ 设备 .................... HarmonyOS phone
 ```
@@ -218,21 +223,23 @@ mindmap
 
 | 模块 | 功能点 | 优先级 | 实现说明 |
 |------|--------|--------|----------|
-| 首页 | 热销 Top5 轮播、优惠券领取、分类精选、规则个性化推荐 | P0 | `HomePage` + `RecommendUtils` |
+| 首页 | 热销 Top5 轮播、优惠券领取、兴趣 Top6 分类精选、规则个性化推荐 | P0 | `HomePage` + `RecommendUtils` |
 | 排行榜 | 全站热销排序；分类排行 + 左侧品类栏 | P0 | `RankPage` |
-| 商品 | 详情展示、加购、收藏（登录）、立即购买 | P0 | `ProductDetail` |
-| 购物车 | 按用户隔离；已购商品置后灰显；勾选结算 | P0 | `CartPage` |
-| 收藏 | 按用户隔离；猜你喜欢推荐位 | P1 | `FavoritePage` |
+| 商品 | 详情展示、店铺头像、加购、收藏双态（登录）、立即购买 | P0 | `ProductDetail` |
+| 购物车 | 按用户隔离；已购商品置后灰显；勾选结算；返回键 | P0 | `CartPage` |
+| 收藏 | 按用户隔离；猜你喜欢；返回键 | P1 | `FavoritePage` |
+| 优惠券 | 独立领券页，同步已领状态 | P1 | `CouponPage` |
 | 账号 | 密码登录、注册（图形验证码）、忘记密码 | P0 | 无短信/第三方登录 |
 | 支付 | 优惠券满减、**余额支付**、订单生成 | P0 | 已移除微信/支付宝选项 |
 | 订单 | 当前用户订单列表 | P0 | `OrderListPage` |
 | 个人中心 | **MySetting**：头像/余额/资料、订单/购物车/收藏、消息通知、隐私协议、退出 | P0 | `MySetting.ets` |
 | 账户余额 | 余额支付校验与扣款（默认 1000 元 mock，注册赠 200） | P1 | `User.balance` |
-| 资料编辑 | 昵称/密码/头像（含自定义头像）；换绑手机（校验占用） | P1 | `edit.ets` |
+| 资料编辑 | 昵称/密码/头像（默认+系统推荐+自定义）；换绑手机 | P1 | `edit.ets` + `AvatarUtils` |
+| 消息通知 | 本地静态列表；已读状态沙箱持久化 | P1 | `notice.ets` + `NoticePersistence` |
 
 ### 2.3 非功能需求
 
-- 数据：**Mock JSON + 内存态**，重启恢复初始数据（购物车/订单/领券等会话内有效）
+- 数据：**Mock JSON 作种子** + **沙箱持久化**（`user_data.json`、`notice_read.json`）；商品数据仍来自 `product.json`
 - UI：**红白主题** `AppTheme` 统一主色 `#E60012`
 - 设备：手机 `phone`
 
@@ -242,14 +249,17 @@ mindmap
 flowchart LR
   subgraph sources [数据源]
     PJ[product.json]
-    UJ[user.json]
-    RF[rawfile 商品图/头像]
+    UJ[user.json 种子]
+    RF[rawfile 商品图/头像/店铺图]
   end
 
   subgraph init [启动加载]
-    AI[AppInit.initAppData / ensureAppData]
+    EA[EntryAbility init]
+    UP[UserPersistence.loadUsers]
+    AI[AppInit.initAppData]
     PJ --> AI
-    UJ --> AI
+    UJ --> UP
+    UP --> AI
     AI --> GS[GlobalStore.allProducts / allUsers]
   end
 
@@ -263,15 +273,17 @@ flowchart LR
   subgraph ui [页面读写]
     H[HomePage] --> GS
     D[ProductDetail] -->|recordBrowse| BH
-  D --> GS
+    D --> GS
     C[CartPage] -->|syncCart| CU
     P[PayPage] -->|createOrder| CU
     M[MySetting] --> CU
-    E[edit] -->|改昵称密码头像| CU
+    E[edit] -->|改资料| CU
+    N[notice] --> NP[NoticePersistence]
   end
 
-  subgraph persist [持久化]
-    GS -.->|当前未写回| UJ
+  subgraph persist [沙箱持久化]
+    CU -->|persistUsersToDisk| UD[(user_data.json)]
+    NP --> NR[(notice_read.json)]
   end
 ```
 
@@ -279,10 +291,11 @@ flowchart LR
 
 | 实体 | 存储位置 | 说明 |
 |------|----------|------|
-| `Product` | `product.json` → `allProducts` | 商品全量 |
-| `User` | `user.json` → `allUsers` | 含 `cartItems[]`、`favoriteIds[]`、`orders[]` |
+| `Product` | `product.json` → `allProducts` | 含 `category`、`shopAvatar`（rawfile 店铺头像路径） |
+| `User` | 沙箱 `user_data.json`（种子 `user.json`） | 含 `cartItems[]`、`favoriteIds[]`、`orders[]`、`avatar`、`balance` |
 | `Order` | 用户 `orders` + 运行时 `orderList` | 支付成功后追加 |
 | `Coupon` | `GlobalStore.COUPONS` 常量 | 领取记录在用户 `claimedCouponIds` |
+| 消息已读 | 沙箱 `notice_read.json` | 已读消息 ID 列表 |
 
 ### 2.6 业务流程图
 
@@ -293,9 +306,10 @@ flowchart LR
 ```mermaid
 flowchart TD
   START([用户打开 APP]) --> EA[EntryAbility.onWindowStageCreate]
-  EA --> INIT[initAppData 加载 mock]
-  INIT --> LOAD_P[读取 product.json → allProducts]
-  INIT --> LOAD_U[读取 user.json → allUsers]
+  EA --> PINIT[UserPersistence + NoticePersistence init]
+  PINIT --> INIT[initAppData 加载数据]
+  INIT --> LOAD_P[product.json → allProducts]
+  INIT --> LOAD_U[UserPersistence.loadUsers → allUsers]
   LOAD_P --> HOME[loadContent HomePage]
   LOAD_U --> HOME
   HOME --> GUEST{是否已登录?}
@@ -398,13 +412,14 @@ flowchart TD
   APPLY --> LOAD_B[loadUserBrowseHistory]
   APPLY --> LOAD_CP[加载 claimedCouponIds]
 
-  USE[页面操作 加购/收藏/领券/支付] --> SYNC{写回用户数据}
+  USE[页面操作 加购/收藏/领券/支付/改资料] --> SYNC{写回用户数据}
   SYNC --> SYNC_C[syncCartToCurrentUser]
   SYNC --> SYNC_F[syncFavoritesToCurrentUser]
   SYNC --> SYNC_O[syncOrdersToCurrentUser]
   SYNC --> SYNC_B[syncBrowseToCurrentUser]
+  SYNC --> DISK[persistUsersToDisk → user_data.json]
 
-  LOGOUT([MySetting 退出登录]) --> PERSIST[persistSession 写回 allUsers]
+  LOGOUT([MySetting 退出登录]) --> PERSIST[persistSession 写回 allUsers + 磁盘]
   PERSIST --> CLEAR[清空 currentUser 与运行时列表]
   CLEAR --> IDLE[回到未登录态]
 ```
@@ -449,46 +464,68 @@ flowchart LR
 
 ```
 entry/src/main/ets/
-├── entryability/EntryAbility.ets    # 启动加载 HomePage + initAppData
+├── entryability/EntryAbility.ets    # 启动：持久化 init + initAppData + HomePage
 ├── common/
-│   ├── AppInit.ets                  # 读取 mock JSON（仅首次加载）
+│   ├── AppInit.ets                  # 加载 mock 商品与用户（UserPersistence）
 │   ├── AppTheme.ets                 # 红白主题色常量
+│   ├── AvatarUtils.ets              # 默认/系统推荐头像路径
+│   ├── UserPersistence.ets          # 沙箱 user_data.json
+│   ├── NoticePersistence.ets        # 沙箱 notice_read.json
 │   └── LoginNav.ets                 # 登录后回支付/首页
-├── components/BottomNavBar.ets      # 三 Tab，个人中心 → pages/MySetting
-├── model/Models.ets                 # 实体、GlobalStore、RecommendUtils
-└── pages/                           # 各业务页面
+├── components/BottomNavBar.ets      # 三 Tab → MySetting
+├── model/Models.ets                 # 实体、GlobalStore、ProductUtils、RecommendUtils
+└── pages/                           # 各业务页面（含 CouponPage）
 entry/src/mock/
-├── product.json
-└── user.json
+├── product.json                     # 含 shopAvatar
+└── user.json                        # 种子用户（avatar: img.png）
 entry/src/main/resources/
 ├── base/profile/main_pages.json     # 路由表
-└── rawfile/                         # 商品图；avatars/ 头像
+├── base/media/                      # favorite / favorite_active 等 UI 图标
+└── rawfile/
+    ├── 1.png …                      # 商品图
+    └── avatars/
+        ├── img.png                  # 默认用户头像
+        └── img/
+            ├── 01.jpg … 06.jpg/png  # 编辑页系统推荐头像
+            └── storeImg/            # 店铺头像 1.png、2.png …
 ```
 
 ### 3.2 数据初始化与用户会话
 
-**代码位置**：`AppInit.ets`、`GlobalStore.initUsers` / `applyUserSession`
+**代码位置**：`AppInit.ets`、`UserPersistence.ets`、`GlobalStore.initUsers` / `applyUserSession`
 
 ```typescript
-// AppInit.ets — 启动时一次性加载
-GlobalStore.allProducts = productData.data;
-GlobalStore.initUsers(userData.data);
+// EntryAbility — 沙箱持久化初始化
+UserPersistence.init(this.context);
+NoticePersistence.init(this.context);
+initAppData();
 
-// applyUserSession — 登录后挂载当前用户
-GlobalStore.currentUser = copyUser(user);
-GlobalStore.loadUserOrders / loadUserCart / loadUserFavorites / loadUserBrowseHistory;
+// AppInit — 商品读 mock；用户读沙箱（首次从 user.json 种子）
+GlobalStore.allProducts = productData.data;
+GlobalStore.initUsers(UserPersistence.loadUsers() as User[]);
+
+// 关键写盘时机
+GlobalStore.persistUsersToDisk();  // 编辑资料、注册、领券、下单、退出等
 ```
 
-**解析**：无后端时，用静态 JSON 作「数据库」；`currentUser` 指针关联内存中的购物车、收藏、订单列表，切换用户前通过 `persistSession*` 写回 `allUsers` 中对应项。
+**解析**：无后端时，商品仍用静态 JSON；**用户资料与会话数据**写入沙箱 `filesDir/user_data.json`，重启后保留购物车、订单、领券、头像等修改。切换用户前通过 `persistSession*` 写回 `allUsers` 并落盘。
 
-### 3.3 首页：轮播、领券、个性化推荐
+### 3.3 首页：轮播、领券、分类精选、个性化推荐
 
 | 功能 | 实现 | 文件 |
 |------|------|------|
 | 热销轮播 | `ProductUtils.getTopHotProducts` 解析 `hot` 字段（支持「万」） | `HomePage.ets` |
-| 分类精选 | 每类目取热度最高一件 `getCategoryTopProducts` | `Models.ets` |
-| 领券 | `GlobalStore.claimCoupon` + 登录校验 | `HomePage.ets` |
-| 为你推荐 | `RecommendUtils` 按订单/收藏/购物车/浏览加权类目打分 | `Models.ets` → `HomePage.refreshPersonalRecommends` |
+| 分类精选 | 兴趣分 Top **6** 品类，每类取热度最高一件；无行为时按品类热度回退 | `RecommendUtils.getInterestCategoryFeatured` |
+| 领券 | `GlobalStore.claimCoupon` + 登录校验；个人中心进 `CouponPage` | `HomePage.ets` · `CouponPage.ets` |
+| 为你推荐 | 订单/收藏/购物车/浏览加权类目打分 | `RecommendUtils.getPersonalizedRecommend` |
+
+**分类精选规则**：
+
+```typescript
+// 类目权重：订单 +5、收藏 +3、购物车 +2、浏览 +1
+// 取权重最高的 6 个 category，每类展示 parseHot 最高的一件商品
+GlobalStore.getCategoryFeaturedRecommend(6);
+```
 
 **推荐规则（节选）**：
 
@@ -555,32 +592,39 @@ if (pending !== null) {
 
 | 菜单项 | 跳转 |
 |--------|------|
-| 消息通知 | `pages/notice`（本地静态数据） |
+| 消息通知 | `pages/notice`（静态列表 + 已读持久化） |
 | 修改个人信息 | `pages/edit` |
 | 已购商品 | `pages/OrderListPage` |
 | 购物车 / 收藏 | `CartPage` / `FavoritePage` |
+| 优惠券 | `pages/CouponPage` |
 | 隐私协议 | `pages/private` |
-| 退出登录 | `GlobalStore.logout()` |
+| 退出登录 | `GlobalStore.logout()` → `persistUsersToDisk` |
 
-头像逻辑：支持 `custom_` 前缀的本地文件头像，否则使用默认资源 `user_77926`。
+**头像逻辑**（`AvatarUtils` + `MySetting.updateAvatar`）：
 
-```typescript
-// 底部导航统一入口
-router.replaceUrl({ url: 'pages/MySetting' });  // BottomNavBar Tab2
-```
+| 类型 | 存储值 | 展示 |
+|------|--------|------|
+| 默认 | `img.png` | `$rawfile('avatars/img.png')` |
+| 系统推荐 | `avatars/img/0x.jpg\|png` | 对应 rawfile |
+| 自定义 | `custom_*.png` | `file://filesDir/...` |
 
-### 3.9 商品详情与浏览埋点
+### 3.9 商品详情、店铺头像与收藏
 
 **代码位置**：`ProductDetail.ets`
 
-- `aboutToAppear`：`GlobalStore.recordBrowse(productId)` 维护最近 20 条浏览记录  
-- 加购 / 收藏 / 立即购买：分别调用 `addToCart`、`addToFavorite`（收藏需登录）、跳转 `PayPage`  
+- `aboutToAppear` / `onPageShow`：`recordBrowse`；`isProductFavorited` 刷新收藏态  
+- **店铺区**：`ProductUtils.getShopAvatarRawPath(item)` → `$rawfile(shopAvatar)`，缺省 `avatars/img/storeImg/1.png`  
+- **收藏按钮**：未收藏 `app.media.favorite`；已收藏 `app.media.favorite_active` + 「已收藏」  
+- 加购 / 立即购买：`addToCart`、跳转 `PayPage`
 
 ### 3.10 主题与资源
 
-- **`AppTheme.ets`**：主色、背景、文字、边框常量，页面引用避免硬编码散落  
+- **`AppTheme.ets`**：主色、背景、文字、边框常量  
 - **商品图**：`$rawfile('1.png')` 等，位于 `resources/rawfile/`  
-- **头像**：`GlobalStore.getAvatarRawPath()` → `avatars/xxx.png`  
+- **用户头像**：见 §3.8 表  
+- **店铺头像**：`product.json` 字段 `shopAvatar`，如 `avatars/img/storeImg/1.png`  
+- **收藏图标**：`base/media/favorite.png`、`favorite_active.png`  
+- **应用图标**：`app_start_icon.png`、`background.png`、`foreground.png`
 
 ---
 
@@ -594,26 +638,27 @@ router.replaceUrl({ url: 'pages/MySetting' });  // BottomNavBar Tab2
 2. **路由与页面配置**  
    所有页面必须在 `main_pages.json` 注册；**路径与文件名一致**（个人中心为 `pages/MySetting` 对应 `MySetting.ets`）。Tab 用 `replaceUrl`，子页用 `pushUrl`，避免返回栈混乱。
 
-3. **单例式 GlobalStore**  
-   课程/演示项目在无后端时，用静态类集中管理用户、购物车、订单，降低页面间传参复杂度；缺点是需手动 `sync*ToCurrentUser`，扩展持久化时要统一收口。
+3. **单例式 GlobalStore + 沙箱持久化**  
+   演示项目用静态类管理会话，用户数据通过 `UserPersistence` 落盘；需在改资料、下单等节点统一 `persistUsersToDisk()`。
 
 ### 4.2 业务实现收获
 
 | 主题 | 收获 |
 |------|------|
-| Mock 驱动 | `product.json` / `user.json` 快速迭代演示数据，与 `AppInit` 解耦 |
-| 多用户隔离 | 购物车、收藏仅存 id，展示时从 `allProducts` 还原；登录切换加载对应用户 |
-| 规则推荐 | 不依赖机器学习也可用加权规则完成「猜你喜欢」，便于答辩讲解 |
-| 支付流程 | `pendingPay` + `LoginNav` 解决中断式登录，贴近真实电商体验 |
-| UI 规范 | `AppTheme` 统一红白视觉，减少后期改色成本 |
+| Mock 驱动 | `product.json` 商品全量；`user.json` 作用户种子 |
+| 沙箱持久化 | 无后端也能保留用户修改（资料、订单、领券、浏览合并） |
+| 多用户隔离 | 购物车、收藏存 id，展示从 `allProducts` 还原 |
+| 规则推荐 | 加权类目 + Top6 分类精选，便于答辩讲解 |
+| 头像与收藏 UX | 默认/推荐/自定义头像分层；收藏双态图标反馈 |
+| 支付流程 | `pendingPay` + `LoginNav` 解决中断式登录 |
 
 ### 4.3 可改进方向
 
-- 将 `user.json` 变更**持久化**（Preferences 或小型数据库）  
-- 消息通知对接真实推送或订单状态变更触发  
-- 优惠券页独立化，替代 Toast 跳转首页  
 - `notice.ets` / `private.ets` / `edit.ets` 硬编码色统一为 `AppTheme`  
-- 单元测试覆盖 `ProductUtils.parseHotValue`、`RecommendUtils` 打分逻辑  
+- 详情页已收藏支持一键取消  
+- 消息通知对接真实推送或订单状态变更触发  
+- 扩充 `storeImg` 并按店铺名精确映射  
+- 单元测试覆盖 `parseHotValue`、`RecommendUtils`、`AvatarUtils`  
 - 远程 API 替换 Mock，保留 `GlobalStore` 接口层便于迁移  
 
 ### 4.4 协作与工程习惯
@@ -630,128 +675,110 @@ router.replaceUrl({ url: 'pages/MySetting' });  // BottomNavBar Tab2
 
 ### A.1 基础设施
 
-| 功能 | 关键文件 | 关键代码行 / 方法 |
-|------|----------|-------------------|
-| 应用启动、加载首页 | `entryability/EntryAbility.ets` | L25 `initAppData()`；L27 `loadContent('pages/HomePage')` |
-| Mock 数据加载 | `common/AppInit.ets` | L6–12 `initAppData`；L16–19 `ensureAppData` |
-| 页面路由注册 | `resources/base/profile/main_pages.json` | 全部 `src` 列表 |
-| Mock 商品/用户数据 | `mock/product.json`、`mock/user.json` | — |
-| 主题色常量 | `common/AppTheme.ets` | 全文 `AppTheme.PRIMARY` 等 |
-| 底部三 Tab | `components/BottomNavBar.ets` | L18–49 `replaceUrl` → Home / Rank / MySetting |
-| 登录后跳转（含待支付回流） | `common/LoginNav.ets` | L5–11 `navigateAfterLogin` |
+| 功能 | 关键文件 | 关键代码 / 方法 |
+|------|----------|-----------------|
+| 应用启动 | `entryability/EntryAbility.ets` | `UserPersistence.init` · `NoticePersistence.init` · `initAppData()` · `loadContent('pages/HomePage')` |
+| Mock 商品加载 | `common/AppInit.ets` | `initAppData` · `ensureAppData` |
+| 用户沙箱持久化 | `common/UserPersistence.ets` | `loadUsers` · `saveUsers` · `filesDir/user_data.json` |
+| 消息已读持久化 | `common/NoticePersistence.ets` | `loadReadIds` · `markRead` · `markAllRead` |
+| 头像路径工具 | `common/AvatarUtils.ets` | `DEFAULT_AVATAR_*` · `SYSTEM_PRESET_RAW_PATHS` · `resolveRawfilePath` |
+| 页面路由注册 | `resources/base/profile/main_pages.json` | 含 `CouponPage` |
+| Mock 数据 | `mock/product.json`、`mock/user.json` | `shopAvatar` · `avatar: img.png` |
+| 主题色 | `common/AppTheme.ets` | `AppTheme.PRIMARY` 等 |
+| 底部三 Tab | `components/BottomNavBar.ets` | `replaceUrl` → Home / Rank / MySetting |
+| 登录后跳转 | `common/LoginNav.ets` | `navigateAfterLogin`（含待支付回流） |
 
 ### A.2 用户与账号
 
-| 功能 | 关键文件 | 关键代码行 / 方法 |
-|------|----------|-------------------|
-| 密码登录 UI | `pages/Login.ets` | L19–29 `doLogin` |
-| 密码登录逻辑 | `model/Models.ets` | L948–958 `loginByPassword` |
-| 注册 + 图形验证码 UI | `pages/Register.ets` | L26–32 生成码；L61–68 展示；L75–119 `doRegister` |
-| 注册写用户 | `model/Models.ets` | L972–1014 `registerUser` |
-| 忘记密码 UI | `pages/ForgetPwd.ets` | L18–44 `resetPwd` |
-| 忘记密码逻辑 | `model/Models.ets` | L1016–1026 `resetPassword` |
-| 登录挂载会话（购物车/订单/浏览合并） | `model/Models.ets` | L797–823 `applyUserSession`；L818–823 `mergeBrowseIds` |
-| 初始化用户列表 | `model/Models.ets` | L758–766 `initUsers` |
-| 退出登录 | `pages/MySetting.ets` | L63–66 `doLogout` → `GlobalStore.logout` L960+ |
-| 待支付暂存/消费 | `model/Models.ets` | L855–867 `setPendingPay` / `consumePendingPay` |
+| 功能 | 关键文件 | 关键代码 / 方法 |
+|------|----------|-----------------|
+| 密码登录 UI | `pages/Login.ets` | `doLogin` |
+| 密码登录逻辑 | `model/Models.ets` | `loginByPassword` |
+| 注册 + 图形验证码 | `pages/Register.ets` | `doRegister` |
+| 注册写用户 | `model/Models.ets` | `registerUser`（默认头像 `img.png`） |
+| 忘记密码 | `pages/ForgetPwd.ets` · `Models.ets` | `resetPassword` |
+| 登录挂载会话 | `model/Models.ets` | `applyUserSession` · `mergeBrowseIds` |
+| 写盘 | `model/Models.ets` | `persistUsersToDisk` → `UserPersistence.saveUsers` |
+| 退出登录 | `pages/MySetting.ets` | `doLogout` → `GlobalStore.logout` |
+| 待支付暂存 | `model/Models.ets` | `setPendingPay` / `consumePendingPay` |
 
 ### A.3 首页与推荐
 
-| 功能 | 关键文件 | 关键代码行 / 方法 |
-|------|----------|-------------------|
-| 首页入口与数据刷新 | `pages/HomePage.ets` | L19–30 `aboutToAppear` / `onPageShow` |
-| 热销 Top5 轮播 | `pages/HomePage.ets` | L22 `getTopHotProducts` |
-| 分类精选（每类一件） | `pages/HomePage.ets` | L23；`Models.ets` L95–127 `getCategoryTopProducts` |
-| 热度排序/解析 | `model/Models.ets` | L49–64 `sortByHotDesc` / `getTopHotProducts` |
-| 领券 UI | `pages/HomePage.ets` | L51–64 `claimCoupon` |
-| 领券逻辑 | `model/Models.ets` | L452–458 `COUPONS`；L469–476 `claimCoupon` |
-| 个性化推荐 UI | `pages/HomePage.ets` | L33–36 `refreshPersonalRecommends` |
-| 推荐门面 | `model/Models.ets` | L652–660 `getPersonalizedRecommend` |
-| 推荐算法核心 | `model/Models.ets` | L233+ `buildCategoryWeights`；L321–374 `RecommendUtils.getPersonalizedRecommend` |
-| 跳转商品详情 | `pages/HomePage.ets` | L42–44 `goProductDetail` |
-| 首页加购 | `pages/HomePage.ets` | L46–48 → `GlobalStore.addToCart` L1132+ |
+| 功能 | 关键文件 | 关键代码 / 方法 |
+|------|----------|-----------------|
+| 首页刷新 | `pages/HomePage.ets` | `aboutToAppear` / `onPageShow` |
+| 热销轮播 | `pages/HomePage.ets` | `getTopHotProducts(products, 5)` |
+| 分类精选 Top6 | `pages/HomePage.ets` | `refreshCategoryRecommends` → `getCategoryFeaturedRecommend(6)` |
+| 分类精选算法 | `model/Models.ets` | `RecommendUtils.getInterestCategoryFeatured` |
+| 领券 | `pages/HomePage.ets` | `claimCoupon` |
+| 优惠券页 | `pages/CouponPage.ets` | 列表展示 · `claimCoupon` · 同步 `claimedIds` |
+| 个性化推荐 | `pages/HomePage.ets` | `refreshPersonalRecommends` → `getPersonalizedRecommend(6)` |
+| 推荐算法 | `model/Models.ets` | `buildCategoryWeights` · `getPersonalizedRecommend` |
 
 ### A.4 排行榜
 
-| 功能 | 关键文件 | 关键代码行 / 方法 |
-|------|----------|-------------------|
-| 页面初始化 | `pages/RankPage.ets` | L16–24 `aboutToAppear` |
-| 全站榜 / 分类榜切换 | `pages/RankPage.ets` | L26–33 `refreshRankList`；L35+ `switchMode` |
-| 按品类筛选 | `model/Models.ets` | L85–93 `getProductsByCategory` |
-| 跳转详情 | `pages/RankPage.ets` | L201–203 |
+| 功能 | 关键文件 | 关键代码 / 方法 |
+|------|----------|-----------------|
+| 全站/分类榜 | `pages/RankPage.ets` | `refreshRankList` · `switchMode` |
+| 按品类筛选 | `model/Models.ets` | `getProductsByCategory` · `sortByHotDesc` |
 
 ### A.5 商品详情
 
-| 功能 | 关键文件 | 关键代码行 / 方法 |
-|------|----------|-------------------|
-| 参数校验与浏览埋点 | `pages/ProductDetail.ets` | L16–25 `aboutToAppear`；L21 `recordBrowse` |
-| 浏览记录写入 | `model/Models.ets` | L597+ `recordBrowse` |
-| 加购 | `pages/ProductDetail.ets` | L114–116 |
-| 收藏 | `pages/ProductDetail.ets` | L95–101 → `addToFavorite` L1159+ |
-| 立即购买 | `pages/ProductDetail.ets` | L125–132 → `toPayItem` L1211+ |
+| 功能 | 关键文件 | 关键代码 / 方法 |
+|------|----------|-----------------|
+| 浏览埋点 | `pages/ProductDetail.ets` | `recordBrowse` |
+| 店铺头像 | `pages/ProductDetail.ets` | `ProductUtils.getShopAvatarRawPath` |
+| 收藏双态 | `pages/ProductDetail.ets` | `isFavorited` · `favorite` / `favorite_active` |
+| 是否已收藏 | `model/Models.ets` | `isProductFavorited` · `addToFavorite` |
+| 加购 / 购买 | `pages/ProductDetail.ets` | `addToCart` · `toPayItem` → `PayPage` |
 
 ### A.6 购物车
 
-| 功能 | 关键文件 | 关键代码行 / 方法 |
-|------|----------|-------------------|
-| 列表刷新与排序 | `pages/CartPage.ets` | L34–68 `refresh` → `getSortedCartList` |
-| 已购商品判断/置后 | `model/Models.ets` | L874+ `isProductPurchased`；L889+ `getSortedCartList` |
-| 勾选与全选 | `pages/CartPage.ets` | L82–113 |
-| 数量增减 | `pages/CartPage.ets` | L317–346 → `updateCartCount` |
-| 结算跳转支付 | `pages/CartPage.ets` | L115–129 `goCheckout` |
-| 加购/同步购物车 | `model/Models.ets` | L1132+ `addToCart`；`syncCartToCurrentUser` |
-| 游客购物车合并 | `model/Models.ets` | L836+ `mergeCartItemsIntoList`（登录时 `applyUserSession` 调用） |
+| 功能 | 关键文件 | 关键代码 / 方法 |
+|------|----------|-----------------|
+| 列表与返回 | `pages/CartPage.ets` | `refresh` · `goBack` |
+| 已购置后排序 | `model/Models.ets` | `getSortedCartList` · `isProductPurchased` |
+| 结算 | `pages/CartPage.ets` | `goCheckout` |
 
 ### A.7 收藏
 
-| 功能 | 关键文件 | 关键代码行 / 方法 |
-|------|----------|-------------------|
-| 收藏列表页 | `pages/FavoritePage.ets` | L24–27 `refresh`；L58–76 列表与删除 |
-| 加入收藏 | `model/Models.ets` | L1159+ `addToFavorite` |
-| 猜你喜欢加收藏 | `pages/FavoritePage.ets` | L94–103 |
+| 功能 | 关键文件 | 关键代码 / 方法 |
+|------|----------|-----------------|
+| 收藏列表 | `pages/FavoritePage.ets` | `refresh` · 删除 · 返回键 |
+| 加入收藏 | `model/Models.ets` | `addToFavorite` · `removeFromFavoriteByIndex` |
 
 ### A.8 支付与订单
 
-| 功能 | 关键文件 | 关键代码行 / 方法 |
-|------|----------|-------------------|
-| 支付页初始化 | `pages/PayPage.ets` | L21–34 `aboutToAppear` |
-| 金额与优惠券计算 | `pages/PayPage.ets` | L43–56 `recalcAmount` |
-| 可用券/最优券 | `model/Models.ets` | L1245–1275 `calcCouponDiscount` / `getUsableCoupons` / `getBestCouponId` |
-| 余额展示 | `pages/PayPage.ets` | L39–41；`Models.ets` L1076+ `getUserBalance` |
-| 确认支付（仅余额） | `pages/PayPage.ets` | L67–102 `doPay` |
-| 未登录中断支付 | `pages/PayPage.ets` | L68–75 |
-| 创建订单与扣款 | `model/Models.ets` | L1307–1335 `createOrder` |
-| 支付后清购物车项 | `model/Models.ets` | `removeCartItemsForPayItems` |
-| 支付结果页 | `pages/PayResultPage.ets` | L14–28 读参；L74–82 跳订单/首页 |
-| 订单列表 | `pages/OrderListPage.ets` | L21–27 `refreshOrders`；L97–117 订单项展示 |
-| 历史订单商品图兼容 | `model/Models.ets` | L138–162 `ProductUtils.resolvePayItemImage`；`OrderListPage.ets` L99 |
+| 功能 | 关键文件 | 关键代码 / 方法 |
+|------|----------|-----------------|
+| 支付页（仅余额） | `pages/PayPage.ets` | `recalcAmount` · `doPay` |
+| 创建订单 | `model/Models.ets` | `createOrder`（`payMethod: balance`） |
+| 订单列表 | `pages/OrderListPage.ets` | `refreshOrders` |
+| 订单商品图 | `model/Models.ets` | `resolvePayItemImage` |
 
 ### A.9 个人中心与资料
 
-| 功能 | 关键文件 | 关键代码行 / 方法 |
-|------|----------|-------------------|
-| 个人中心页 | `pages/MySetting.ets` | L30–61 `refreshProfile` / `updateAvatar` |
-| 头像路径解析 | `model/Models.ets` | L1104–1120 `getAvatarRawPath`（含 `avatars/img.png`） |
-| 菜单跳转 | `pages/MySetting.ets` | L215–233 `ListItemBuilder` |
-| 编辑资料页 | `pages/edit.ets` | L27–47 加载；L119–146 `saveProfile` |
-| 修改密码 | `pages/edit.ets` | L149–187 `changePassword` |
-| 换绑手机 | `pages/edit.ets` | L59–74 → `updateUserPhone` L1028+ |
-| 自定义头像选择 | `pages/edit.ets` | L76–112 `selectCustomAvatar` |
-| 消息通知（静态） | `pages/notice.ets` | L15–64 数据；L92–120 `markAsRead` / `markAllRead` |
-| 隐私协议 | `pages/private.ets` | 全文展示 + `router.back` |
+| 功能 | 关键文件 | 关键代码 / 方法 |
+|------|----------|-----------------|
+| 个人中心 | `pages/MySetting.ets` | `refreshProfile` · `updateAvatar` · 菜单跳转 |
+| 头像展示 | `model/Models.ets` | `getAvatarRawPath` → `AvatarUtils` |
+| 编辑资料 | `pages/edit.ets` | 系统推荐头像 · `selectCustomAvatar` · `saveProfile` |
+| 消息通知 | `pages/notice.ets` | `reloadNotices` · `markAsRead` · `NoticePersistence` |
+| 隐私协议 | `pages/private.ets` | 静态展示 |
 
-### A.10 快速定位：Models.ets 核心静态方法
+### A.10 快速定位：Models.ets 核心方法
 
-| 方法 | 行号（约） | 用途 |
-|------|------------|------|
-| `ProductUtils.getTopHotProducts` | 63–64 | 热销榜 |
-| `ProductUtils.getCategoryTopProducts` | 95–127 | 分类精选 |
-| `RecommendUtils.getPersonalizedRecommend` | 321–374 | 推荐打分 |
-| `GlobalStore.applyUserSession` | 797–823 | 登录会话 |
-| `GlobalStore.loginByPassword` | 948–958 | 密码登录 |
-| `GlobalStore.registerUser` | 972–1014 | 注册 |
-| `GlobalStore.createOrder` | 1307–1335 | 下单扣余额 |
-| `GlobalStore.addToCart` | 1132+ | 加购 |
+| 方法 | 用途 |
+|------|------|
+| `ProductUtils.getTopHotProducts` | 热销榜 |
+| `ProductUtils.getShopAvatarRawPath` | 店铺头像 rawfile 路径 |
+| `RecommendUtils.getInterestCategoryFeatured` | 兴趣 Top6 分类精选 |
+| `RecommendUtils.getPersonalizedRecommend` | 猜你喜欢打分 |
+| `GlobalStore.getCategoryFeaturedRecommend` | 首页分类精选门面 |
+| `GlobalStore.persistUsersToDisk` | 用户数据写沙箱 |
+| `GlobalStore.applyUserSession` | 登录会话挂载 |
+| `GlobalStore.createOrder` | 余额下单扣款 |
+| `GlobalStore.isProductFavorited` | 详情页收藏态 |
 
 ---
 
@@ -768,4 +795,4 @@ router.replaceUrl({ url: 'pages/MySetting' });  // BottomNavBar Tab2
 
 ---
 
-*文档版本：与当前 `entry` 模块代码同步；个人中心路由 `pages/MySetting`；已移除短信/第三方登录及模拟第三方支付；附录 A 为功能与代码对照索引。*
+*文档版本：与当前 `entry` 模块代码同步（2026-05）；个人中心路由 `pages/MySetting`；含沙箱持久化、CouponPage、AvatarUtils、兴趣 Top6 分类精选、店铺头像与收藏双态图标；附录 A 为功能与代码对照索引。*
